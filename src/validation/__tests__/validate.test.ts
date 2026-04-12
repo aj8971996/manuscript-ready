@@ -1,5 +1,5 @@
 /**
- * Validation layer — commits 1 + 2.
+ * Validation layer — commits 1 + 2 (+ v5 addition).
  *
  * Commit 1 (first three tests): pinned the core shape — ready/attention
  * status, issue structure, parse-error handling, single-warning lookup.
@@ -11,6 +11,7 @@
  * Severity table (from the warning-keys contract in the handoff):
  *   parse-error:empty / :oversize / :malformed  → blocker
  *   metadata-missing:title / :byline / :legalName → attention
+ *   category-wordcount-mismatch                 → attention (v5)
  *   unsupported-block:<tag>                     → attention (tag in detail)
  *   mammoth-error                               → attention
  *   emphasis-mixed-style / emphasis-nested      → info
@@ -102,6 +103,7 @@ describe('validate — full severity table (commit 2)', () => {
     ['metadata-missing:title', 'attention'],
     ['metadata-missing:byline', 'attention'],
     ['metadata-missing:legalName', 'attention'],
+    ['category-wordcount-mismatch', 'attention'],
     ['mammoth-error', 'attention'],
     ['emphasis-mixed-style', 'info'],
     ['emphasis-nested', 'info'],

@@ -3,11 +3,14 @@
  *
  * Warning keys (triage #10): warnings are stable machine-readable keys, not
  * human prose. Validation layer translates these to UX strings. Current set:
- *   'metadata-missing:title'     - hints.title was not provided
- *   'metadata-missing:byline'    - hints.byline was not provided
- *   'metadata-missing:legalName' - hints.legalName was not provided
- *   'emphasis-nested'            - residual * or _ inside an emphasis span;
- *                                  emitted at most once per manuscript
+ *   'metadata-missing:title'        - hints.title was not provided
+ *   'metadata-missing:byline'       - hints.byline was not provided
+ *   'metadata-missing:legalName'    - hints.legalName was not provided
+ *   'emphasis-nested'               - residual * or _ inside an emphasis span;
+ *                                     emitted at most once per manuscript
+ *   'category-wordcount-mismatch'   - hints.category disagrees with the
+ *                                     detected SFWA band; emitted at most
+ *                                     once per manuscript (v5)
  *
  * Adding a new key requires updating the warning-keys contract in the
  * handoff first. Prose warnings are a regression.
@@ -21,6 +24,8 @@ import type {
 } from '../ir/prose';
 import { isSceneBreakLine } from '../util/scene-detect';
 import { classifyChapter } from '../util/chapter-detect';
+import { categoryFromWordCount } from '../util/category-from-wordcount';
+import { countWords } from '../util/word-count';
 import type { ParseHints, ParseResult } from './types';
 
 export type { ParseHints, ParseResult, ParserError } from './types';
@@ -48,6 +53,11 @@ export function parseTxt(input: string, hints?: ParseHints): ParseResult {
 
   const metadata = buildMetadata(hints, warnings);
   const body = parseBody(input, warnings);
+
+  // v5: single-call-site category mismatch check. One per manuscript is
+  // trivially satisfied here because this sits outside any loop — do not
+  // move this into a loop without adding a `warned` flag.
+  maybeWarnCategoryMismatch(body, hints, warnings);
 
   return {
     ok: true,
@@ -79,6 +89,18 @@ function buildMetadata(hints: ParseHints | undefined, warnings: string[]): Metad
   }
 
   return metadata;
+}
+
+function maybeWarnCategoryMismatch(
+  body: ProseBlock[],
+  hints: ParseHints | undefined,
+  warnings: string[],
+): void {
+  if (!hints?.category) return;
+  const detected = categoryFromWordCount(countWords(body));
+  if (detected !== hints.category) {
+    warnings.push('category-wordcount-mismatch');
+  }
 }
 
 function parseBody(input: string, warnings: string[]): ProseBlock[] {

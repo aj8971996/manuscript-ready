@@ -10,9 +10,15 @@
  * no new kinds without updating D1 in the handoff first. ParserError.cause
  * is `unknown` (not `Error`) because mammoth rejections are promise
  * rejections whose rejection value is not guaranteed to be an Error instance.
+ *
+ * v5: optional `category` field on ParseHints. When provided, both parsers
+ * compare it to the detected SFWA band (see util/category-from-wordcount)
+ * and emit 'category-wordcount-mismatch' once per manuscript when they
+ * disagree. When absent, no mismatch warning can fire. Adding this field is
+ * additive; existing call sites are unaffected.
  */
 
-import type { ContactBlock, ProseManuscript } from '../ir/prose';
+import type { ContactBlock, Metadata, ProseManuscript } from '../ir/prose';
 
 export type ParseHints = {
   title?: string;
@@ -20,6 +26,7 @@ export type ParseHints = {
   legalName?: string;
   contact?: ContactBlock;
   headerKeyword?: string;
+  category?: Metadata['category'];
 };
 
 export type ParserError = {
