@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "reset-project": "node ./scripts/reset-project.js",
     "test": "jest",
-    "test:engine": "jest --selectProjects engine"
+    "test:engine": "jest --selectProjects engine",
+    "test:validation": "jest --selectProjects validation"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
