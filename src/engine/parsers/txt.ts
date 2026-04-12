@@ -1,5 +1,4 @@
 import type {
-  ProseManuscript,
   Metadata,
   ContactBlock,
   ProseBlock,
@@ -7,24 +6,9 @@ import type {
 } from '../ir/prose';
 import { isSceneBreakLine } from '../util/scene-detect';
 import { classifyChapter } from '../util/chapter-detect';
+import type { ParseHints, ParseResult } from './types';
 
-export type ParseHints = {
-  title?: string;
-  byline?: string;
-  legalName?: string;
-  contact?: ContactBlock;
-  headerKeyword?: string;
-};
-
-export type ParserError = {
-  kind: 'oversize' | 'malformed' | 'empty';
-  message: string;
-  cause?: unknown;
-};
-
-export type ParseResult =
-  | { ok: true; manuscript: ProseManuscript; warnings: string[] }
-  | { ok: false; error: ParserError };
+export type { ParseHints, ParseResult, ParserError } from './types';
 
 /** D5 emphasis tokenizer: **bold**, *italic*, _italic_, all → emphasis. */
 const EMPHASIS_REGEX = /\*\*([^*]+?)\*\*|\*([^*\n]+?)\*|_([^_\n]+?)_/g;
@@ -113,7 +97,6 @@ function parseBody(input: string, warnings: string[]): ProseBlock[] {
   return blocks;
 }
 
-/** Split input into groups of consecutive non-blank lines. */
 function groupLines(input: string): string[][] {
   const lines = input.split('\n');
   const groups: string[][] = [];
