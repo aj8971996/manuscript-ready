@@ -66,6 +66,14 @@ export const MESSAGES: Readonly<Record<string, MessageEntry>> = {
     message: 'Legal name is missing. The running header and filename will fall back to defaults.',
   },
 
+  // Category detection (v5, attention — formatter degrades gracefully;
+  // writer can change category or accept the mismatch and continue)
+  'category-wordcount-mismatch': {
+    severity: 'attention',
+    message:
+      "The declared category doesn't match the manuscript's word count. You can change the category or continue.",
+  },
+
   // Mammoth passthrough
   'mammoth-error': {
     severity: 'attention',

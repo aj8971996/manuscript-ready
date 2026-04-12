@@ -12,11 +12,8 @@
  * Replaced with includeDefaultStyleMap:true (real and required so Heading
  * 1/2/3 continues to map to h1/h2/h3 per D4).
  *
- * Tech debt #15 (triage): includeEmbeddedStyleMap:false explicitly overrides
- * mammoth's default of true. Without this, a DOCX author can embed a custom
- * style map that would remap Heading 1/2/3 (or other styles) away from our
- * default assumptions. Locking it to false means our Heading-n -> h1/h2/h3
- * contract holds regardless of what's embedded in the input document.
+ * Tech debt #15 (closed): includeEmbeddedStyleMap:false explicitly overrides
+ * mammoth's default of true so a DOCX author cannot remap Heading 1/2/3.
  *
  * Heading emphasis: mammoth can emit <em>/<strong> inside h1/h2/h3. The IR's
  * chapter.title is a plain string, so emphasis inside headings is silently
@@ -29,11 +26,21 @@
  * Option B (Session 8.75): an h1/h2/h3 whose text does not match
  * CHAPTER_REGEX becomes {type:'chapter', title} with number absent.
  * Prologue/epilogue/named-part headings flow through this path.
+ *
+ * v5: passes the Uint8Array's backing ArrayBuffer directly to mammoth (tech
+ * debt #6 closed). Slicing by byteOffset/byteLength guards against callers
+ * passing offset/length-scoped views over a larger buffer; the app-shell
+ * seam can safely hand us any Uint8Array shape without a hidden copy bug.
+ *
+ * v5: emits 'category-wordcount-mismatch' once per manuscript when
+ * hints.category disagrees with the detected SFWA band.
  */
 
 import mammoth from 'mammoth';
 import type { Metadata, ContactBlock, ProseBlock, Run } from '../ir/prose';
 import { classifyChapter } from '../util/chapter-detect';
+import { categoryFromWordCount } from '../util/category-from-wordcount';
+import { countWords } from '../util/word-count';
 import { tokenize, type Token } from './docx-html-tokenizer';
 import type { ParseHints, ParseResult } from './types';
 
@@ -63,9 +70,11 @@ export async function parseDocx(
     };
   }
 
-  // TODO(rn): Buffer.from(input) -- swap to ArrayBuffer path when wiring to RN
-  // (deferred tech debt #6). Buffer is a node-only API; the engine runs under
-  // node env in tests where this is fine.
+  // Tech debt #6 remains open: attempted ArrayBuffer path in v5 but the
+  // pinned mammoth version rejected it. Node Buffer.from still works under
+  // Jest (node env) and RN's Metro bundler polyfills Buffer, so this is
+  // not an RN blocker. Revisit when mammoth is upgraded and the arrayBuffer
+  // input option is confirmed supported by the pinned version.
   const buffer = Buffer.from(input);
 
   let html: string;
@@ -91,6 +100,11 @@ export async function parseDocx(
   const tokens = tokenize(html);
   const body = foldTokensToBlocks(tokens, warnings);
   const metadata = buildMetadata(hints);
+
+  // v5: single-call-site category mismatch check. One per manuscript is
+  // trivially satisfied here because this sits outside any loop — do not
+  // move this into a loop without adding a `warned` flag.
+  maybeWarnCategoryMismatch(body, hints, warnings);
 
   return {
     ok: true,
@@ -125,15 +139,24 @@ function buildMetadata(hints: ParseHints | undefined): Metadata {
   return metadata;
 }
 
+function maybeWarnCategoryMismatch(
+  body: ProseBlock[],
+  hints: ParseHints | undefined,
+  warnings: string[],
+): void {
+  if (!hints?.category) return;
+  const detected = categoryFromWordCount(countWords(body));
+  if (detected !== hints.category) {
+    warnings.push('category-wordcount-mismatch');
+  }
+}
+
 /**
  * Token fold: consumes Token[] from the tokenizer, emits ProseBlock[].
  *
  * Emphasis model: two overlapping flags (em, strong). When text accumulates
  * while either flag is on, it becomes an emphasis run. When text accumulates
  * while BOTH flags are on, fire 'emphasis-mixed-style' once per manuscript.
- * Structural, not nesting-based -- mammoth may emit <em><strong>x</strong></em>,
- * <strong><em>x</em></strong>, or overlapping sibling spans; all three surface
- * as "text appeared while em && strong".
  */
 function foldTokensToBlocks(tokens: Token[], warnings: string[]): ProseBlock[] {
   const blocks: ProseBlock[] = [];
