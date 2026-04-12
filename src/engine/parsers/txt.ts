@@ -1,3 +1,18 @@
+/**
+ * TXT parser.
+ *
+ * Warning keys (triage #10): warnings are stable machine-readable keys, not
+ * human prose. Validation layer translates these to UX strings. Current set:
+ *   'metadata-missing:title'     - hints.title was not provided
+ *   'metadata-missing:byline'    - hints.byline was not provided
+ *   'metadata-missing:legalName' - hints.legalName was not provided
+ *   'emphasis-nested'            - residual * or _ inside an emphasis span;
+ *                                  emitted at most once per manuscript
+ *
+ * Adding a new key requires updating the warning-keys contract in the
+ * handoff first. Prose warnings are a regression.
+ */
+
 import type {
   Metadata,
   ContactBlock,
@@ -46,10 +61,10 @@ function buildMetadata(hints: ParseHints | undefined, warnings: string[]): Metad
   const byline = hints?.byline ?? '';
   const legalName = hints?.legalName ?? '';
 
-  if (!hints?.title) warnings.push('Metadata: title not provided; defaulted to empty.');
-  if (!hints?.byline) warnings.push('Metadata: byline not provided; defaulted to empty.');
+  if (!hints?.title) warnings.push('metadata-missing:title');
+  if (!hints?.byline) warnings.push('metadata-missing:byline');
   if (!hints?.legalName) {
-    warnings.push('Metadata: legalName not provided; defaulted to empty.');
+    warnings.push('metadata-missing:legalName');
   }
 
   const metadata: Metadata = {
@@ -88,7 +103,7 @@ function parseBody(input: string, warnings: string[]): ProseBlock[] {
     const joined = group.join(' ');
     const { runs, sawNested } = tokenizeEmphasis(joined);
     if (sawNested && !nestedWarned) {
-      warnings.push('Emphasis: nested emphasis detected; collapsed to a single level.');
+      warnings.push('emphasis-nested');
       nestedWarned = true;
     }
     blocks.push({ type: 'paragraph', runs });
