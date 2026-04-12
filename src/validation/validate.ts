@@ -5,17 +5,31 @@
  * src/engine except via the parsers barrel and the IR types — engine
  * internals are off-limits per the purity rule.
  *
- * Commit 1 scope: handle the ok:false path (parse errors → blocker issue)
- * and straightforward key lookup for warnings. Status derivation is the
- * "any blocker or attention flips to attention, else ready" rule.
+ * Processing order for each warning key from parseResult.warnings:
+ *   1. If the key starts with UNSUPPORTED_BLOCK_PREFIX, extract the tag
+ *      into detail and emit an attention issue. Each distinct tag becomes
+ *      its own issue (engine already dedupes per-tag).
+ *   2. Otherwise, look up the key in MESSAGES. If found, emit an issue
+ *      with that entry's severity and message.
+ *   3. Otherwise, pass through as UNKNOWN_KEY_MESSAGE (info severity).
  *
- * Commit 2 will add: dedup (mammoth-warning), pass-through for unknown
- * keys as info, unsupported-block:<tag> prefix matching with tag detail,
- * and the rest of the severity table.
+ * Dedup: mammoth-warning and mammoth-error are explicitly not deduped at
+ * the engine. Validation collapses repeats of the same key to one issue.
+ * Dedup is keyed on the exact warning string, so 'unsupported-block:ul'
+ * and 'unsupported-block:ol' remain distinct. Parse errors naturally
+ * produce only one issue so dedup doesn't apply to them.
+ *
+ * Status derivation: any blocker or attention issue flips status to
+ * 'attention'; otherwise 'ready'. Info-only reports are 'ready'.
  */
 
 import type { ParseResult } from '../engine/parsers';
-import { MESSAGES } from './messages';
+import {
+  MESSAGES,
+  UNKNOWN_KEY_MESSAGE,
+  UNSUPPORTED_BLOCK_MESSAGE,
+  UNSUPPORTED_BLOCK_PREFIX,
+} from './messages';
 import type { ValidationIssue, ValidationReport } from './types';
 
 export type ValidateInput = {
@@ -24,31 +38,38 @@ export type ValidateInput = {
 
 export function validate(input: ValidateInput): ValidationReport {
   const { parseResult } = input;
-  const issues: ValidationIssue[] = [];
 
   if (!parseResult.ok) {
     const key = `parse-error:${parseResult.error.kind}`;
-    const entry = MESSAGES[key];
-    // Commit 1 tests only exercise 'malformed'. If a kind lands here
-    // without a MESSAGES entry, commit 2's pass-through path will cover
-    // it; for now we fall back to a blocker with a generic message so
-    // the shape of ValidationReport is always well-formed.
-    issues.push({
-      key,
-      severity: entry?.severity ?? 'blocker',
-      message: entry?.message ?? 'The file could not be parsed.',
-    });
+    const entry = MESSAGES[key] ?? {
+      severity: 'blocker' as const,
+      message: 'The file could not be parsed.',
+    };
+    const issues: ValidationIssue[] = [
+      { key, severity: entry.severity, message: entry.message },
+    ];
     return { status: 'attention', issues };
   }
 
+  const issues: ValidationIssue[] = [];
+  const seen = new Set<string>();
+
   for (const warningKey of parseResult.warnings) {
-    const entry = MESSAGES[warningKey];
-    if (entry === undefined) {
-      // Commit 2 will formalize unknown-key pass-through as info with a
-      // generic message. For commit 1 we simply skip so we don't emit
-      // surprise attention-severity issues before the full table lands.
+    if (seen.has(warningKey)) continue;
+    seen.add(warningKey);
+
+    if (warningKey.startsWith(UNSUPPORTED_BLOCK_PREFIX)) {
+      const tag = warningKey.slice(UNSUPPORTED_BLOCK_PREFIX.length);
+      issues.push({
+        key: warningKey,
+        severity: UNSUPPORTED_BLOCK_MESSAGE.severity,
+        message: UNSUPPORTED_BLOCK_MESSAGE.message,
+        detail: tag,
+      });
       continue;
     }
+
+    const entry = MESSAGES[warningKey] ?? UNKNOWN_KEY_MESSAGE;
     issues.push({
       key: warningKey,
       severity: entry.severity,
