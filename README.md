@@ -1,50 +1,46 @@
-# Welcome to your Expo app 👋
+# ManuscriptReady
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Mobile-first utility that takes a fiction writer's draft (`.docx`, `.txt`, or pasted text) and exports it in industry-standard manuscript formats. Enter your metadata once, export a submission-ready `.docx` and PDF.
 
-## Get started
+**Status:** pre-alpha. Environment setup complete, no product code yet.
 
-1. Install dependencies
+## Why
 
-   ```bash
-   npm install
-   ```
+Unpublished and early-career fiction writers draft wherever they draft (Google Docs, Word, Scrivener, notes apps) and then have to wrestle their work into "Shunn format" or similar before submitting to magazines and agents. ManuscriptReady does the wrestling in one tap, on the device they already have in their pocket.
 
-2. Start the app
+## Principles
 
-   ```bash
-   npx expo start
-   ```
+1. **No data theft.** Manuscripts never leave the device. All parsing, formatting, and export happen client-side. No uploads, no cloud, no telemetry on content.
+2. **Honest monetization.** Revenue comes from AdMob banners on non-editor screens, one optional rewarded ad, and a single one-time ~$4.99 IAP to remove ads. No subscriptions, no accounts, no data brokering.
+3. **Real value to a specific niche.** Every feature answers "does this help a writer submit more easily?"
+4. **Test on real hardware.** Every change is verified on a physical device before it's considered working.
+5. **Maintainable and observable from day one.** Clean structure, strict TypeScript, linting, and version control are enforced from the first commit, not bolted on later.
 
-In the output, you'll find options to open the app in a
+## Formats (planned)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- **v1:** Shunn short story, Shunn novel
+- **Later:** stage play, screenplay, television, musical
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Tech Stack
 
-## Get a fresh project
+- Expo (managed React Native), SDK 55, New Architecture
+- TypeScript (strict)
+- ESLint (flat config via `eslint-config-expo`) + Prettier
+- EAS Build + EAS Submit for Play Store delivery
+- Planned libraries: `docx`, `mammoth`, `expo-document-picker`, `expo-file-system`, `expo-sharing`, `react-native-google-mobile-ads`
 
-When you're ready, run:
+## Development
 
-```bash
-npm run reset-project
-```
+\`\`\`bash
+npm install
+npm run start      # Metro dev server, scan QR with Expo Go
+npm run lint       # ESLint
+npm run format     # Prettier (writes)
+npm run typecheck  # TypeScript, no emit
+\`\`\`
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Tested on: Samsung Galaxy S25 Ultra (Android 16, One UI 8) via Expo Go.
 
-## Learn more
+## License
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+MIT, see [LICENSE](./LICENSE).
