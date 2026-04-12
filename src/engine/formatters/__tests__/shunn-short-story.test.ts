@@ -8,8 +8,11 @@
  * deliberately discards presentational formatting — margins, exact spacing,
  * header suppression — which is precisely the layer we need to assert on.
  *
- * This test is EXPECTED TO FAIL in Session 5 (fixture plumbing only; no
- * formatter implementation yet). Session 6 makes it pass.
+ * Session 6 update: the contact-block and word-count assertions use
+ * collectParagraphs() to descend into tables, because Shunn's page-1 layout
+ * places those elements inside a two-cell borderless table (contact left,
+ * word count right). The shallow `walk` helper only reaches direct children
+ * of w:body and can't see paragraphs nested in w:tbl.
  *
  * Units reminder: OOXML uses twips for most measurements. 1 inch = 1440 twips.
  *   1"    margins         = 1440 twips
@@ -101,6 +104,30 @@ const walk = (node: unknown, path: string[]): unknown => {
   return cur;
 };
 
+// Collects every w:p node under a root, descending into tables
+// (w:tbl > w:tr > w:tc > w:p) and any other nested containers.
+// Needed because Shunn's page-1 layout puts the contact block and word
+// count inside a two-cell table — the shallow `walk` helper above only
+// reaches direct children of w:body.
+const collectParagraphs = (node: unknown): XmlNode[] => {
+  if (node == null || typeof node !== 'object') return [];
+  const out: XmlNode[] = [];
+  const visit = (n: unknown): void => {
+    if (n == null || typeof n !== 'object') return;
+    const obj = n as Record<string, unknown>;
+    const ps = obj['w:p'];
+    if (Array.isArray(ps)) out.push(...(ps as XmlNode[]));
+    else if (ps && typeof ps === 'object') out.push(ps as XmlNode);
+    for (const [k, v] of Object.entries(obj)) {
+      if (k === 'w:p') continue;
+      if (Array.isArray(v)) v.forEach(visit);
+      else if (v && typeof v === 'object') visit(v);
+    }
+  };
+  visit(node);
+  return out;
+};
+
 // --- Assertions -----------------------------------------------------------
 
 describe('shunn-short-story formatter — structural invariants', () => {
@@ -166,8 +193,8 @@ describe('shunn-short-story formatter — structural invariants', () => {
     });
 
     it('includes contact block with author name and email', () => {
-      const body = walk(documentXml, ['w:document', 'w:body']) as Record<string, unknown>;
-      const paragraphs = (body['w:p'] as XmlNode[]) ?? [];
+      const body = walk(documentXml, ['w:document', 'w:body']);
+      const paragraphs = collectParagraphs(body);
       const allText = paragraphs
         .flatMap((p) => (p['w:r'] as XmlNode[]) ?? [])
         .map((r) => {
@@ -186,8 +213,8 @@ describe('shunn-short-story formatter — structural invariants', () => {
       // so this test doesn't re-break when we swap fixtures. Session 6+ may
       // tighten against a canonical ~3400-word fixture once rounding is
       // committed to code.
-      const body = walk(documentXml, ['w:document', 'w:body']) as Record<string, unknown>;
-      const paragraphs = (body['w:p'] as XmlNode[]) ?? [];
+      const body = walk(documentXml, ['w:document', 'w:body']);
+      const paragraphs = collectParagraphs(body);
       const allText = paragraphs
         .flatMap((p) => (p['w:r'] as XmlNode[]) ?? [])
         .map((r) => {
