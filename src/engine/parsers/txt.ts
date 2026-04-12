@@ -6,6 +6,7 @@ import type {
   Run,
 } from '../ir/prose';
 import { isSceneBreakLine } from '../util/scene-detect';
+import { classifyChapter } from '../util/chapter-detect';
 
 export type ParseHints = {
   title?: string;
@@ -24,18 +25,6 @@ export type ParserError = {
 export type ParseResult =
   | { ok: true; manuscript: ProseManuscript; warnings: string[] }
   | { ok: false; error: ParserError };
-
-/**
- * D3 chapter regex (Session 7, locked).
- *
- * Matches a line that *starts with* "chapter" followed by whitespace and
- * either an Arabic numeral, a Roman numeral, or a word-number up to twenty.
- * Anchored with ^ and \b to prevent matching "This is chapter one" mid-sentence
- * once we've already confirmed the group is a single line. The richer-chapter
- * workaround for docx authors is: use Heading 1 style (handled in Commits 7-8).
- */
-const CHAPTER_REGEX =
-  /^chapter\s+(?:(\d+)|([ivxlcdm]+)|(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty))\b/i;
 
 /** D5 emphasis tokenizer: **bold**, *italic*, _italic_, all → emphasis. */
 const EMPHASIS_REGEX = /\*\*([^*]+?)\*\*|\*([^*\n]+?)\*|_([^_\n]+?)_/g;
@@ -142,24 +131,6 @@ function groupLines(input: string): string[][] {
   }
   if (current.length > 0) groups.push(current);
   return groups;
-}
-
-function classifyChapter(
-  line: string,
-): Extract<ProseBlock, { type: 'chapter' }> | null {
-  const match = CHAPTER_REGEX.exec(line.trim());
-  if (!match) return null;
-
-  const block: Extract<ProseBlock, { type: 'chapter' }> = { type: 'chapter' };
-
-  const arabic = match[1];
-  if (arabic !== undefined) {
-    const n = Number.parseInt(arabic, 10);
-    if (Number.isFinite(n)) block.number = n;
-  }
-  // Roman (match[2]) and word-form (match[3]) recognized but not decoded (see D3 comment).
-
-  return block;
 }
 
 function tokenizeEmphasis(text: string): { runs: Run[]; sawNested: boolean } {
