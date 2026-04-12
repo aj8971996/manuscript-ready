@@ -6,9 +6,11 @@
  * word count top-right, title ~3.67" from the top, running header on
  * page 2+ of the form `Lastname / Keyword / <page>`.
  *
- * Packer.toBuffer returns a Node Buffer; this is fine under Jest (node env).
- * When this formatter is wired into React Native, swap to Packer.toBase64String
- * or Packer.toBlob — the pure byte output contract here stays the same.
+ * v5 (tech debt #3 closed): output path is Packer.toBlob → ArrayBuffer →
+ * Uint8Array. Blob is what expo-sharing wants at the app-shell seam, and
+ * Packer.toBlob is documented in the docx library. The FormatterResult.bytes
+ * contract (Uint8Array) is unchanged, so every downstream caller and test
+ * is stable across the swap. Jest (node 18+) has global Blob; no polyfill.
  */
 
 import {
@@ -116,12 +118,12 @@ export async function formatShunnShortStory(
     ],
   });
 
-  const buffer = await Packer.toBuffer(doc);
-  const bytes = new Uint8Array(
-    buffer.buffer,
-    buffer.byteOffset,
-    buffer.byteLength,
-  );
+  // v5 (tech debt #3 closed): Packer.toBlob → ArrayBuffer → Uint8Array.
+  // RN-ready: expo-sharing consumes Blob directly at the app layer, but the
+  // engine boundary still returns Uint8Array for test parity and to keep
+  // the formatter output format-agnostic.
+  const blob = await Packer.toBlob(doc);
+  const bytes = new Uint8Array(await blob.arrayBuffer());
 
   return {
     bytes,
@@ -274,12 +276,6 @@ function buildTitleParagraph(
   font: string,
   contactLineCount: number,
 ): Paragraph {
-  // Target: title baseline lands ~TITLE_TOP_TWIPS from page top.
-  // Top margin consumes MARGIN_TWIPS. The contact/word-count table above
-  // consumes ~contactLineCount * SINGLE_LINE_TWIPS. Bridge the remainder
-  // with spacing.before, floored at 0. This is approximate — Word reflows
-  // based on actual font metrics — and will be tightened in a later
-  // session with a real layout-measurement helper.
   const estimatedTableHeight = contactLineCount * SINGLE_LINE_TWIPS;
   const spacingBefore = Math.max(
     0,
@@ -395,8 +391,6 @@ function buildEndMarker(
   font: string,
   body: ProseBlock[],
 ): Paragraph[] {
-  // If the IR body already includes a theEnd block, respect that — don't
-  // double up. Otherwise honor the formatter option.
   const bodyAlreadyEnds = body.some((b) => b.type === 'theEnd');
   if (bodyAlreadyEnds || marker === 'none') return [];
 
@@ -429,10 +423,6 @@ function buildRunningHeader(
   keyword: string,
   font: string,
 ): Header {
-  // Shunn running header: "Lastname / Keyword / <page>", right-aligned.
-  // If the keyword is empty (missing title or title was only articles, and
-  // no override provided), collapse to "Lastname / <page>" — the caller
-  // already pushed a warning for that case.
   const left = lastname.length > 0 ? lastname : 'Author';
   const middle = keyword.length > 0 ? ` / ${keyword}` : '';
 
