@@ -12,6 +12,12 @@
  * Replaced with includeDefaultStyleMap:true (real and required so Heading
  * 1/2/3 continues to map to h1/h2/h3 per D4).
  *
+ * Tech debt #15 (triage): includeEmbeddedStyleMap:false explicitly overrides
+ * mammoth's default of true. Without this, a DOCX author can embed a custom
+ * style map that would remap Heading 1/2/3 (or other styles) away from our
+ * default assumptions. Locking it to false means our Heading-n -> h1/h2/h3
+ * contract holds regardless of what's embedded in the input document.
+ *
  * Heading emphasis: mammoth can emit <em>/<strong> inside h1/h2/h3. The IR's
  * chapter.title is a plain string, so emphasis inside headings is silently
  * flattened to text with no warning (Session 8.75 decision).
@@ -67,7 +73,7 @@ export async function parseDocx(
   try {
     const result = await mammoth.convertToHtml(
       { buffer },
-      { includeDefaultStyleMap: true },
+      { includeDefaultStyleMap: true, includeEmbeddedStyleMap: false },
     );
     html = result.value;
     mammothMessages = result.messages as ReadonlyArray<{
