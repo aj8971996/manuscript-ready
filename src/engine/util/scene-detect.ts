@@ -6,6 +6,15 @@
  *   "#", "***", "* * *" (collapses to "***"), "~~~"
  * No blank-line-gap heuristic.
  */
+
+const SCENE_BREAK_MARKERS: ReadonlySet<string> = new Set([
+  '#',
+  '***',
+  '* * *',
+  '~~~',
+]);
+
 export function isSceneBreakLine(line: string): boolean {
-  throw new Error('not implemented');
+  const normalized = line.trim().replace(/\s+/g, ' ');
+  return SCENE_BREAK_MARKERS.has(normalized);
 }
