@@ -18,7 +18,7 @@ const tsJestTransform = {
       },
     },
   ],
-} as const;
+};
 
 const config: Config = {
   projects: [
@@ -33,6 +33,13 @@ const config: Config = {
       displayName: 'validation',
       testEnvironment: 'node',
       roots: ['<rootDir>/src/validation'],
+      testMatch: ['**/__tests__/**/*.test.ts'],
+      transform: tsJestTransform,
+    },
+    {
+      displayName: 'app-pure',
+      testEnvironment: 'node',
+      roots: ['<rootDir>/app'],
       testMatch: ['**/__tests__/**/*.test.ts'],
       transform: tsJestTransform,
     },

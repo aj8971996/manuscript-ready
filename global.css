@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ADR §6 — light (default) */
+:root {
+  --color-bg: #FAFAF7;
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #F3F2ED;
+  --color-border: #E5E3DC;
+  --color-border-strong: #C9C6BC;
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #5C5A55;
+  --color-text-muted: #8B8780;
+  --color-accent: #3B5FD9;
+  --color-accent-subtle: #E8EDFB;
+  --color-severity-blocker: #B42318;
+  --color-severity-attention: #B54708;
+  --color-severity-info: #5C5A55;
+  --color-status-ready-text: #067647;
+  --color-status-ready-bg: #E6F4EA;
+  --color-status-attention-text: #633806;
+  --color-status-attention-bg: #FAEEDA;
+}
+
+/* ADR §6 — dark */
+.dark:root {
+  --color-bg: #141413;
+  --color-surface: #1E1D1B;
+  --color-surface-muted: #26251F;
+  --color-border: #2F2E28;
+  --color-border-strong: #454339;
+  --color-text-primary: #F0EFEA;
+  --color-text-secondary: #A8A59D;
+  --color-text-muted: #7A776F;
+  --color-accent: #7A97F0;
+  --color-accent-subtle: #1F2C52;
+  --color-severity-blocker: #F87171;
+  --color-severity-attention: #FBB04C;
+  --color-severity-info: #A8A59D;
+  --color-status-ready-text: #4ADE80;
+  --color-status-ready-bg: #14311F;
+  --color-status-attention-text: #FBB04C;
+  --color-status-attention-bg: #3B2A10;
+}
