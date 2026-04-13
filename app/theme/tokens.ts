@@ -95,6 +95,4 @@ export type RadiusStep = keyof typeof radius;
  */
 export const INTENTIONAL_VALUE_ALIASES: ReadonlyArray<[TokenName, TokenName]> = [
   ['severity-info', 'text-secondary'],
-  // Dark mode: status-attention-text === severity-attention (#FBB04C).
-  ['status-attention-text', 'severity-attention'],
 ];
