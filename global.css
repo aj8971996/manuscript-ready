@@ -2,44 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ADR §6 — light (default) */
+/*
+ * ADR §6 colors, emitted as space-separated RGB triplets for NativeWind v4.
+ * The canonical TS source is src/app-lib/theme/tokens.ts (hex). Values here
+ * must match §6 exactly — regenerate from tokens.ts if edits drift.
+ */
+
+/* Light (default) */
 :root {
-  --color-bg: #FAFAF7;
-  --color-surface: #FFFFFF;
-  --color-surface-muted: #F3F2ED;
-  --color-border: #E5E3DC;
-  --color-border-strong: #C9C6BC;
-  --color-text-primary: #1A1A1A;
-  --color-text-secondary: #5C5A55;
-  --color-text-muted: #8B8780;
-  --color-accent: #3B5FD9;
-  --color-accent-subtle: #E8EDFB;
-  --color-severity-blocker: #B42318;
-  --color-severity-attention: #B54708;
-  --color-severity-info: #5C5A55;
-  --color-status-ready-text: #067647;
-  --color-status-ready-bg: #E6F4EA;
-  --color-status-attention-text: #633806;
-  --color-status-attention-bg: #FAEEDA;
+  --color-bg: 250 250 247;
+  --color-surface: 255 255 255;
+  --color-surface-muted: 243 242 237;
+  --color-border: 229 227 220;
+  --color-border-strong: 201 198 188;
+  --color-text-primary: 26 26 26;
+  --color-text-secondary: 92 90 85;
+  --color-text-muted: 139 135 128;
+  --color-accent: 59 95 217;
+  --color-accent-subtle: 232 237 251;
+  --color-severity-blocker: 180 35 24;
+  --color-severity-attention: 181 71 8;
+  --color-severity-info: 92 90 85;
+  --color-status-ready-text: 6 118 71;
+  --color-status-ready-bg: 230 244 234;
+  --color-status-attention-text: 99 56 6;
+  --color-status-attention-bg: 250 238 218;
 }
 
-/* ADR §6 — dark */
-.dark:root {
-  --color-bg: #141413;
-  --color-surface: #1E1D1B;
-  --color-surface-muted: #26251F;
-  --color-border: #2F2E28;
-  --color-border-strong: #454339;
-  --color-text-primary: #F0EFEA;
-  --color-text-secondary: #A8A59D;
-  --color-text-muted: #7A776F;
-  --color-accent: #7A97F0;
-  --color-accent-subtle: #1F2C52;
-  --color-severity-blocker: #F87171;
-  --color-severity-attention: #FBB04C;
-  --color-severity-info: #A8A59D;
-  --color-status-ready-text: #4ADE80;
-  --color-status-ready-bg: #14311F;
-  --color-status-attention-text: #FBB04C;
-  --color-status-attention-bg: #3B2A10;
+/* Dark — applied when an ancestor has the `dark` class */
+.dark:root,
+.dark {
+  --color-bg: 20 20 19;
+  --color-surface: 30 29 27;
+  --color-surface-muted: 38 37 31;
+  --color-border: 47 46 40;
+  --color-border-strong: 69 67 57;
+  --color-text-primary: 240 239 234;
+  --color-text-secondary: 168 165 157;
+  --color-text-muted: 122 119 111;
+  --color-accent: 122 151 240;
+  --color-accent-subtle: 31 44 82;
+  --color-severity-blocker: 248 113 113;
+  --color-severity-attention: 251 176 76;
+  --color-severity-info: 168 165 157;
+  --color-status-ready-text: 74 222 128;
+  --color-status-ready-bg: 20 49 31;
+  --color-status-attention-text: 251 176 76;
+  --color-status-attention-bg: 59 42 16;
 }

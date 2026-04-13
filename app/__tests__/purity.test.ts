@@ -18,6 +18,7 @@ const FORBIDDEN_IN_ENGINE = [
   /(^|['"])nativewind(['"\/]|$)/,
   /(^|['"])zustand(['"\/]|$)/,
   /from\s+['"][^'"]*\/app\//,
+  /from\s+['"][^'"]*\/app-lib\//,
 ];
 
 const ALLOWED_VALIDATION_IMPORT_PREFIXES = [

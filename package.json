@@ -15,7 +15,8 @@
     "test": "jest",
     "test:engine": "jest --selectProjects engine",
     "test:validation": "jest --selectProjects validation",
-    "test:app-pure": "jest --selectProjects app-pure"
+    "test:app-pure": "jest --selectProjects app-pure",
+    "test:app-rn": "jest --selectProjects app-rn"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -44,7 +45,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
-    "react-native-css-interop": "^0.1.22",
+    "react-native-css-interop": "^0.2.3",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
@@ -56,13 +57,16 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/react": "~19.1.0",
+    "@types/react-test-renderer": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "eslint-config-prettier": "^10.1.8",
     "fast-xml-parser": "^5.5.11",
     "jest": "^30.3.0",
+    "jest-expo": "~54.0.12",
     "jszip": "^3.10.1",
     "prettier": "^3.8.2",
+    "react-test-renderer": "19.1.0",
     "tailwindcss": "^3.4.17",
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",

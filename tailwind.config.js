@@ -1,11 +1,8 @@
 /** @type {import('tailwindcss').Config} */
-const withOpacity = (cssVar) => `rgb(from var(${cssVar}) r g b / <alpha-value>)`;
+const withOpacity = (v) => `rgb(var(${v}) / <alpha-value>)`;
 
 module.exports = {
-  content: [
-    './app/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-  ],
+  content: ['./app/**/*.{ts,tsx}', './src/app-lib/**/*.{ts,tsx}'],
   presets: [require('nativewind/preset')],
   darkMode: 'class',
   theme: {
@@ -30,29 +27,14 @@ module.exports = {
         'status-attention-bg': withOpacity('--color-status-attention-bg'),
       },
       spacing: {
-        0: '0px',
-        1: '4px',
-        2: '8px',
-        3: '12px',
-        4: '16px',
-        5: '24px',
-        6: '32px',
-        7: '48px',
-        8: '64px',
+        0: '0px', 1: '4px', 2: '8px', 3: '12px', 4: '16px',
+        5: '24px', 6: '32px', 7: '48px', 8: '64px',
       },
-      borderRadius: {
-        sm: '6px',
-        md: '12px',
-        lg: '20px',
-      },
+      borderRadius: { sm: '6px', md: '12px', lg: '20px' },
       fontSize: {
-        xs: ['12px', '18px'],
-        sm: ['14px', '21px'],
-        base: ['16px', '24px'],
-        lg: ['18px', '27px'],
-        xl: ['22px', { lineHeight: '29px' }],
-        '2xl': ['28px', { lineHeight: '36px' }],
-        '3xl': ['36px', { lineHeight: '47px' }],
+        xs: ['12px', '18px'], sm: ['14px', '21px'], base: ['16px', '24px'],
+        lg: ['18px', '27px'], xl: ['22px', '29px'], '2xl': ['28px', '36px'],
+        '3xl': ['36px', '47px'],
       },
     },
   },

@@ -11,7 +11,7 @@
  * NOT redefined here — so a future engine update to the category union
  * propagates automatically.
  */
-import type { Metadata } from '../../src/engine/ir/prose';
+import type { Metadata } from '../../engine/ir/prose';
 
 export type Category = NonNullable<Metadata['category']>;
 
