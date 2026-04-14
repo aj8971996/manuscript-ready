@@ -5,6 +5,7 @@ import {
   STORE_KEY,
   type ManuscriptState,
 } from '../manuscript';
+import { createInMemoryAdapter, SCHEMA_VERSION } from '../../persistence';
 
 describe('manuscript store — initial shape', () => {
   it('starts with null current and null ui preferences', () => {
@@ -48,14 +49,21 @@ describe('manuscript store — persist partialize contract (P1)', () => {
     const fakeState = {
       current: { id: 'secret', category: 'novel' },
       ui: { lastSelectedCategory: 'short-story', themeOverride: 'dark' },
+      manuscriptIndex: [
+        { id: 'abc', title: 'Sample', category: 'short-story' as const, createdAt: 1 },
+      ],
       setCurrent: () => {},
       clearCurrent: () => {},
       setLastSelectedCategory: () => {},
       setThemeOverride: () => {},
+      hydrate: async () => {},
     } as unknown as ManuscriptState;
 
     const out = PERSIST_PARTIALIZE(fakeState);
-    expect(out).toEqual({ ui: fakeState.ui });
+    expect(out).toEqual({
+      ui: fakeState.ui,
+      manuscriptIndex: fakeState.manuscriptIndex,
+    });
     expect('current' in out).toBe(false);
   });
 
@@ -72,13 +80,15 @@ describe('manuscript store — persist partialize contract (P1)', () => {
     expect(raw).not.toBeNull();
     const parsed = JSON.parse(raw as string);
 
-    // Zustand persist wraps as { state, version }.
     expect(parsed.state).toEqual({
       ui: { lastSelectedCategory: 'novelette', themeOverride: null },
+      manuscriptIndex: [],
     });
     expect(parsed.state.current).toBeUndefined();
     // Defense-in-depth: id must not appear anywhere in the serialized blob.
     expect(raw).not.toContain('manuscript-abc');
+    // P1 rail: no body/IR ever reaches the persisted blob.
+    expect(raw).not.toContain('irJson');
   });
 });
 
@@ -102,5 +112,109 @@ describe('manuscript store — selector isolation (subscribeWithSelector)', () =
     expect(uiFireCount).toBe(1);
 
     unsub();
+  });
+});
+
+describe('manuscript store — manuscriptIndex + hydrate', () => {
+  async function seededAdapter(rows: Array<{ id: string; title: string; category: 'short-story' | 'novelette' | 'novella' | 'novel'; createdAt: number }>) {
+    const a = createInMemoryAdapter();
+    await a.init();
+    for (const r of rows) {
+      await a.insertManuscript({
+        id: r.id,
+        schemaVersion: SCHEMA_VERSION,
+        title: r.title,
+        category: r.category,
+        irJson: JSON.stringify({ schemaVersion: 1, metadata: {}, body: [] }),
+        createdAt: r.createdAt,
+      });
+    }
+    return a;
+  }
+
+  it('manuscriptIndex starts empty', () => {
+    const store = createManuscriptStore();
+    expect(store.getState().manuscriptIndex).toEqual([]);
+  });
+
+  it('hydrate populates manuscriptIndex from adapter.listManuscripts', async () => {
+    const adapter = await seededAdapter([
+      { id: 'a', title: 'Alpha', category: 'short-story', createdAt: 100 },
+      { id: 'b', title: 'Beta', category: 'novel', createdAt: 200 },
+      { id: 'c', title: 'Gamma', category: 'novelette', createdAt: 300 },
+    ]);
+    const store = createManuscriptStore();
+    await store.getState().hydrate(adapter);
+
+    expect(store.getState().manuscriptIndex).toEqual([
+      { id: 'a', title: 'Alpha', category: 'short-story', createdAt: 100 },
+      { id: 'b', title: 'Beta', category: 'novel', createdAt: 200 },
+      { id: 'c', title: 'Gamma', category: 'novelette', createdAt: 300 },
+    ]);
+  });
+
+  it('hydrate is idempotent and overwrites on each call', async () => {
+    const store = createManuscriptStore();
+
+    const first = await seededAdapter([
+      { id: 'x', title: 'First', category: 'short-story', createdAt: 1 },
+    ]);
+    await store.getState().hydrate(first);
+    expect(store.getState().manuscriptIndex).toHaveLength(1);
+
+    const second = await seededAdapter([
+      { id: 'y', title: 'Second', category: 'novel', createdAt: 2 },
+      { id: 'z', title: 'Third', category: 'novella', createdAt: 3 },
+    ]);
+    await store.getState().hydrate(second);
+
+    const idx = store.getState().manuscriptIndex;
+    expect(idx).toHaveLength(2);
+    expect(idx.map((i) => i.id)).toEqual(['y', 'z']);
+  });
+
+  it('hydrate against an empty adapter leaves manuscriptIndex as []', async () => {
+    const adapter = await seededAdapter([]);
+    const store = createManuscriptStore();
+    await store.getState().hydrate(adapter);
+    expect(store.getState().manuscriptIndex).toEqual([]);
+  });
+
+  it('manuscriptIndex items contain exactly {id, title, category, createdAt}', async () => {
+    const adapter = await seededAdapter([
+      { id: 'a', title: 'Alpha', category: 'short-story', createdAt: 100 },
+    ]);
+    const store = createManuscriptStore();
+    await store.getState().hydrate(adapter);
+
+    const item = store.getState().manuscriptIndex[0]!;
+    expect(Object.keys(item).sort()).toEqual(
+      ['category', 'createdAt', 'id', 'title'].sort(),
+    );
+  });
+
+  it('hydrate swallows adapter rejections and leaves manuscriptIndex unchanged', async () => {
+    const seeded = await seededAdapter([
+      { id: 'a', title: 'Alpha', category: 'short-story', createdAt: 1 },
+    ]);
+    const store = createManuscriptStore();
+    await store.getState().hydrate(seeded);
+    expect(store.getState().manuscriptIndex).toHaveLength(1);
+
+    const broken = {
+      async init() {},
+      async migrate() {},
+      async insertManuscript() { return ''; },
+      async getManuscriptById() { return null; },
+      async listManuscripts() { throw new Error('disk corrupt'); },
+    };
+
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    await store.getState().hydrate(broken);
+    warnSpy.mockRestore();
+
+    // Previous state preserved — no wipe on failure.
+    expect(store.getState().manuscriptIndex).toHaveLength(1);
+    expect(store.getState().manuscriptIndex[0]!.id).toBe('a');
   });
 });
