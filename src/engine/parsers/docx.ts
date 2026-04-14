@@ -1,47 +1,44 @@
 /**
  * DOCX parser.
  *
- * Pipeline per D1/D9/D10: size/empty pre-checks -> mammoth.convertToHtml ->
- * tokenize (Commit 6 tokenizer) -> block-fold to ProseBlock[]. Never throws
- * across the engine boundary; failures surface as ParseResult.ok=false with
+ * Pipeline: size/empty pre-checks -> readDocxToHtml (fflate-based, Hermes-
+ * compatible) -> tokenize -> block-fold to ProseBlock[]. Never throws across
+ * the engine boundary; failures surface as ParseResult.ok=false with
  * ParserError.kind in {'empty','oversize','malformed'}.
  *
- * D10 correction (Session 8.75): the handoff's externalFileAccess:false is
- * not a real mammoth option -- mammoth reads only from the provided buffer
- * and does not fetch external resources, so the flag would have been a no-op.
- * Replaced with includeDefaultStyleMap:true (real and required so Heading
- * 1/2/3 continues to map to h1/h2/h3 per D4).
+ * Replacement parser (post-v9): mammoth was removed in favor of an in-house
+ * DOCX reader built on fflate. The switch was forced by a Hermes wall —
+ * mammoth's jszip dependency hangs synchronously on device — documented in
+ * handoff v9 and closed in v10. The HTML boundary downstream is preserved,
+ * so the tokenizer and fold logic below are unchanged from the mammoth era.
  *
- * Tech debt #15 (closed): includeEmbeddedStyleMap:false explicitly overrides
- * mammoth's default of true so a DOCX author cannot remap Heading 1/2/3.
+ * Warning keys preserved from the mammoth era: 'mammoth-warning' and
+ * 'mammoth-error'. The names are stale but the validation layer's test
+ * matrix asserts these strings; renaming requires a cross-cutting edit that
+ * is explicitly out of scope for this session (validation purity rule).
+ * Rename is deferred tech debt, tracked in handoff v10.
  *
- * Heading emphasis: mammoth can emit <em>/<strong> inside h1/h2/h3. The IR's
- * chapter.title is a plain string, so emphasis inside headings is silently
- * flattened to text with no warning (Session 8.75 decision).
- *
- * Mammoth messages: each message emits one stable key ('mammoth-warning' or
- * 'mammoth-error'), not deduped. Human prose is dropped per the warning-keys
- * contract. Dedup, if desired, is the validation layer's concern.
+ * Heading emphasis: the reader can emit <em>/<strong> inside h1/h2/h3. The
+ * IR's chapter.title is a plain string, so emphasis inside headings is
+ * silently flattened to text with no warning (Session 8.75 decision).
  *
  * Option B (Session 8.75): an h1/h2/h3 whose text does not match
  * CHAPTER_REGEX becomes {type:'chapter', title} with number absent.
  * Prologue/epilogue/named-part headings flow through this path.
  *
- * v5: passes the Uint8Array's backing ArrayBuffer directly to mammoth (tech
- * debt #6 closed). Slicing by byteOffset/byteLength guards against callers
- * passing offset/length-scoped views over a larger buffer; the app-shell
- * seam can safely hand us any Uint8Array shape without a hidden copy bug.
- *
  * v5: emits 'category-wordcount-mismatch' once per manuscript when
  * hints.category disagrees with the detected SFWA band.
+ *
+ * Tech debt #6 (closed, v10): the Node Buffer dependency is gone. The
+ * reader accepts Uint8Array directly; no cast, no polyfill needed on RN.
  */
 
-import mammoth from 'mammoth';
 import type { Metadata, ContactBlock, ProseBlock, Run } from '../ir/prose';
 import { classifyChapter } from '../util/chapter-detect';
 import { categoryFromWordCount } from '../util/category-from-wordcount';
 import { countWords } from '../util/word-count';
 import { tokenize, type Token } from './docx-html-tokenizer';
+import { readDocxToHtml } from './docx-reader';
 import type { ParseHints, ParseResult } from './types';
 
 export type { ParseHints, ParseResult, ParserError } from './types';
@@ -70,25 +67,12 @@ export async function parseDocx(
     };
   }
 
-  // Tech debt #6 remains open: attempted ArrayBuffer path in v5 but the
-  // pinned mammoth version rejected it. Node Buffer.from still works under
-  // Jest (node env) and RN's Metro bundler polyfills Buffer, so this is
-  // not an RN blocker. Revisit when mammoth is upgraded and the arrayBuffer
-  // input option is confirmed supported by the pinned version.
-  const buffer = Buffer.from(input);
-
   let html: string;
-  let mammothMessages: ReadonlyArray<{ type: string; message: string }>;
+  let readerWarnings: ReadonlyArray<string>;
   try {
-    const result = await mammoth.convertToHtml(
-      { buffer },
-      { includeDefaultStyleMap: true, includeEmbeddedStyleMap: false },
-    );
-    html = result.value;
-    mammothMessages = result.messages as ReadonlyArray<{
-      type: string;
-      message: string;
-    }>;
+    const result = readDocxToHtml(input);
+    html = result.html;
+    readerWarnings = result.warnings;
   } catch (cause) {
     return {
       ok: false,
@@ -96,7 +80,7 @@ export async function parseDocx(
     };
   }
 
-  const warnings: string[] = foldMammothMessages(mammothMessages);
+  const warnings: string[] = [...readerWarnings];
   const tokens = tokenize(html);
   const body = foldTokensToBlocks(tokens, warnings);
   const metadata = buildMetadata(hints);
@@ -111,19 +95,6 @@ export async function parseDocx(
     manuscript: { schemaVersion: 1, metadata, body },
     warnings,
   };
-}
-
-function foldMammothMessages(
-  messages: ReadonlyArray<{ type: string; message: string }>,
-): string[] {
-  const out: string[] = [];
-  for (const msg of messages) {
-    if (msg.type === 'warning') out.push('mammoth-warning');
-    else if (msg.type === 'error') out.push('mammoth-error');
-    // Unknown types pass silently; adding new keys requires updating
-    // the warning-keys contract in the handoff first.
-  }
-  return out;
 }
 
 function buildMetadata(hints: ParseHints | undefined): Metadata {
