@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "manuscript-ready",
+    "name": "ManuscriptReady",
     "slug": "manuscript-ready",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -18,7 +18,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.manuscriptready"
+      "package": "com.mcschweeeet.manuscriptready"
     },
     "web": {
       "output": "static",
