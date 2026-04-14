@@ -10,6 +10,11 @@ jest.mock('expo-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => children,
   Stack: () => null,
   useLocalSearchParams: () => ({ id: 'test-manuscript-id' }),
+  useRouter: () => ({
+    replace: jest.fn(),
+    push: jest.fn(),
+    back: jest.fn(),
+  }),
 }));
 
 import LibraryScreen from '../index';
