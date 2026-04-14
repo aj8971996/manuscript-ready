@@ -25,6 +25,11 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+# debug: pulled-from-device sqlite snapshots (do not commit — may contain manuscript IR)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
 
 # macOS
 .DS_Store
