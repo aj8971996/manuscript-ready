@@ -79,9 +79,6 @@ export async function parseDocx(
       error: { kind: 'malformed', message: 'Failed to parse DOCX content.', cause },
     };
   }
-  console.warn('[docx-bc] html length:', html.length);
-  console.warn('[docx-bc] first 500:', html.slice(0, 500));
-  console.warn('[docx-bc] reader warnings:', readerWarnings.join(','));
 
   const warnings: string[] = [...readerWarnings];
   const tokens = tokenize(html);
