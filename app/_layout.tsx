@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useResolvedTheme } from '../src/app-lib/theme/use-theme';
 import { getSqliteAdapter } from '../src/app-lib/persistence/native-singleton';
@@ -26,10 +27,12 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <View style={{ flex: 1 }} className={theme === 'dark' ? 'dark' : undefined}>
-        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-        <Stack screenOptions={{ headerShown: false }} />
-      </View>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={{ flex: 1 }} className={theme === 'dark' ? 'dark' : undefined}>
+          <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+          <Stack screenOptions={{ headerShown: false }} />
+        </View>
+      </GestureHandlerRootView>
     </SafeAreaProvider>
   );
 }
