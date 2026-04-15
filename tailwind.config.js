@@ -4,7 +4,7 @@ const withOpacity = (v) => `rgb(var(${v}) / <alpha-value>)`;
 module.exports = {
   content: ['./app/**/*.{ts,tsx}', './src/app-lib/**/*.{ts,tsx}'],
   presets: [require('nativewind/preset')],
-  darkMode: 'class',
+  darkMode: 'media',
   theme: {
     extend: {
       colors: {
