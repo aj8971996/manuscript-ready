@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useResolvedTheme } from '../src/app-lib/theme/use-theme';
 import { getSqliteAdapter } from '../src/app-lib/persistence/native-singleton';
 import { useManuscriptStore } from '../src/app-lib/state/store';
@@ -24,9 +25,11 @@ export default function RootLayout() {
   }, [hydrate]);
 
   return (
-    <View style={{ flex: 1 }} className={theme === 'dark' ? 'dark' : undefined}>
-      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false }} />
-    </View>
+    <SafeAreaProvider>
+      <View style={{ flex: 1 }} className={theme === 'dark' ? 'dark' : undefined}>
+        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+        <Stack screenOptions={{ headerShown: false }} />
+      </View>
+    </SafeAreaProvider>
   );
 }

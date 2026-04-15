@@ -22,6 +22,7 @@ import {
   type ImportFailure,
 } from '../src/app-lib/import/import-flow';
 import type { Category } from '../src/app-lib/engine-dispatch';
+import { Screen } from '../src/app-lib/ui/Screen';
 
 type Status =
   | { kind: 'idle' }
@@ -104,7 +105,7 @@ export default function ImportScreen() {
   };
 
   return (
-    <View className="flex-1 bg-bg px-5 pt-7">
+    <Screen>
       <Text className="text-2xl text-text-primary mb-3">Import</Text>
       <Text className="text-base text-text-secondary mb-6">
         Pick a .docx or .txt file from your device. We never upload — parsing happens locally.
@@ -155,6 +156,6 @@ export default function ImportScreen() {
           {failureMessage(status.failure)}
         </Text>
       ) : null}
-    </View>
+    </Screen>
   );
 }

@@ -1,12 +1,13 @@
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
+import { Screen } from '../../../src/app-lib/ui/Screen';
 
 export default function MetadataEditorScreen() {
   return (
-    <View className="flex-1 bg-bg px-5 pt-7">
+    <Screen hasHeader>
       <Text className="text-2xl text-text-primary mb-3">Metadata</Text>
       <Text className="text-base text-text-secondary">
         Title, byline, contact, and category will live here. Nothing to edit yet.
       </Text>
-    </View>
+    </Screen>
   );
 }

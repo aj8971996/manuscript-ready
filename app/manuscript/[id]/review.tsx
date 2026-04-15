@@ -1,8 +1,9 @@
 import { Text, View } from 'react-native';
+import { Screen } from '../../../src/app-lib/ui/Screen';
 
 export default function ReviewExportScreen() {
   return (
-    <View className="flex-1 bg-bg px-5 pt-7">
+    <Screen hasHeader>
       <Text className="text-2xl text-text-primary mb-3">Review & export</Text>
       <Text className="text-base text-text-secondary mb-6">
         Issues grouped by severity and the export action will appear here after the pipeline runs.
@@ -13,6 +14,6 @@ export default function ReviewExportScreen() {
         </View>
         <Text className="text-xs text-text-muted">(placeholder status pill)</Text>
       </View>
-    </View>
+    </Screen>
   );
 }

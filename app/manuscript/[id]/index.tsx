@@ -1,10 +1,11 @@
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { loadById, type LoadByIdResult } from '../../../src/app-lib/manuscript-loader/load-by-id';
 import { getSqliteAdapter } from '../../../src/app-lib/persistence/native-singleton';
 import type { ProseManuscript } from '../../../src/engine/ir/prose';
+import { Screen } from '../../../src/app-lib/ui/Screen';
 
 type ScreenState =
   | { kind: 'loading' }
@@ -23,7 +24,7 @@ function deriveBodySummary(irJson: string): string {
   if (!firstParagraph || firstParagraph.type !== 'paragraph') return '';
   const text = firstParagraph.runs.map((r) => r.text).join('');
   if (text.length <= SUMMARY_MAX) return text;
-  return text.slice(0, SUMMARY_MAX).trimEnd() + 'â€¦';
+  return text.slice(0, SUMMARY_MAX).trimEnd() + '…';
 }
 
 export default function ManuscriptDetailScreen() {
@@ -50,9 +51,9 @@ export default function ManuscriptDetailScreen() {
 
   if (state.kind === 'loading') {
     return (
-      <View className="flex-1 bg-bg px-5 pt-7">
-        <Text className="text-base text-text-muted">Loadingâ€¦</Text>
-      </View>
+      <Screen hasHeader>
+        <Text className="text-base text-text-muted">Loading…</Text>
+      </Screen>
     );
   }
 
@@ -60,23 +61,23 @@ export default function ManuscriptDetailScreen() {
 
   if (!result.ok && result.failure === 'not-found') {
     return (
-      <View className="flex-1 bg-bg px-5 pt-7">
+      <Screen hasHeader>
         <Text className="text-2xl text-text-primary mb-3">Not found</Text>
         <Text className="text-base text-text-muted">
           This manuscript could not be located.
         </Text>
-      </View>
+      </Screen>
     );
   }
 
   if (!result.ok) {
     return (
-      <View className="flex-1 bg-bg px-5 pt-7">
+      <Screen hasHeader>
         <Text className="text-2xl text-text-primary mb-3">Unable to load</Text>
         <Text className="text-base text-text-muted">
           Something went wrong reading this manuscript.
         </Text>
-      </View>
+      </Screen>
     );
   }
 
@@ -85,7 +86,8 @@ export default function ManuscriptDetailScreen() {
   const displayTitle = manuscript.title || 'Untitled';
 
   return (
-    <View className="flex-1 bg-bg px-5 pt-7">
+    <Screen hasHeader>
+      <Stack.Screen options={{ title: displayTitle }} />
       <Text className="text-2xl text-text-primary mb-1">{displayTitle}</Text>
       <Text className="text-sm text-text-muted mb-6">{manuscript.category}</Text>
       {summary.length > 0 ? (
@@ -105,6 +107,6 @@ export default function ManuscriptDetailScreen() {
           </Pressable>
         </Link>
       </View>
-    </View>
+    </Screen>
   );
 }

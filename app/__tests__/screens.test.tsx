@@ -5,10 +5,11 @@
  */
 import * as React from 'react';
 import TestRenderer, { act } from 'react-test-renderer';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 jest.mock('expo-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => children,
-  Stack: () => null,
+  Stack: Object.assign(() => null, { Screen: () => null }),
   useLocalSearchParams: () => ({ id: 'test-manuscript-id' }),
   useRouter: () => ({
     replace: jest.fn(),
@@ -23,6 +24,11 @@ import ManuscriptDetailScreen from '../manuscript/[id]';
 import MetadataEditorScreen from '../manuscript/[id]/metadata';
 import ReviewExportScreen from '../manuscript/[id]/review';
 
+const mockMetrics = {
+  frame: { x: 0, y: 0, width: 390, height: 844 },
+  insets: { top: 44, left: 0, right: 0, bottom: 34 },
+};
+
 describe('screen smoke — renders without throwing', () => {
   const cases: [string, React.ComponentType][] = [
     ['Library', LibraryScreen],
@@ -35,7 +41,11 @@ describe('screen smoke — renders without throwing', () => {
   it.each(cases)('%s renders', (_name, Component) => {
     let tree: TestRenderer.ReactTestRenderer | null = null;
     act(() => {
-      tree = TestRenderer.create(React.createElement(Component));
+      tree = TestRenderer.create(
+        <SafeAreaProvider initialMetrics={mockMetrics}>
+          <Component />
+        </SafeAreaProvider>
+      );
     });
     expect(tree!.toJSON()).toBeTruthy();
     act(() => {
