@@ -23,6 +23,7 @@ import {
 } from '../src/app-lib/import/import-flow';
 import type { Category } from '../src/app-lib/engine-dispatch';
 import { Screen } from '../src/app-lib/ui/Screen';
+import { Button } from '../src/app-lib/ui/Button';
 
 type Status =
   | { kind: 'idle' }
@@ -135,21 +136,9 @@ export default function ImportScreen() {
         })}
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ disabled: !canPick }}
-        onPress={onChooseFile}
-        disabled={!canPick}
-        className={
-          canPick
-            ? 'bg-accent rounded-md px-4 py-3 self-start'
-            : 'bg-accent/40 rounded-md px-4 py-3 self-start'
-        }
-      >
-        <Text className="text-base text-surface">
-          {status.kind === 'working' ? 'Working…' : 'Choose file'}
-        </Text>
-      </Pressable>
+      <Button variant="primary" onPress={onChooseFile} disabled={!canPick}>
+        {status.kind === 'working' ? 'Working…' : 'Choose file'}
+      </Button>
 
       {status.kind === 'failed' ? (
         <Text className="text-sm text-severity-blocker mt-4">

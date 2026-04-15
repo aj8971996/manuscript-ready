@@ -1,8 +1,9 @@
 import { Link } from 'expo-router';
-import { Pressable, Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useManuscriptStore } from '../src/app-lib/state/store';
 import type { ManuscriptListItem } from '../src/app-lib/persistence';
 import { Screen } from '../src/app-lib/ui/Screen';
+import { Button } from '../src/app-lib/ui/Button';
 
 export default function LibraryScreen() {
   const items = useManuscriptStore((s) => s.manuscriptIndex);
@@ -15,12 +16,7 @@ export default function LibraryScreen() {
           Nothing here yet. Import a draft to get started — everything stays on this device.
         </Text>
         <Link href="/import" asChild>
-          <Pressable
-            accessibilityRole="button"
-            className="bg-accent rounded-md px-4 py-3 self-start"
-          >
-            <Text className="text-base text-surface">Import a manuscript</Text>
-          </Pressable>
+          <Button variant="primary">Import a manuscript</Button>
         </Link>
       </Screen>
     );
@@ -32,14 +28,11 @@ export default function LibraryScreen() {
       {items.map((item) => (
         <ManuscriptRow key={item.id} item={item} />
       ))}
-      <Link href="/import" asChild>
-        <Pressable
-          accessibilityRole="button"
-          className="bg-accent rounded-md px-4 py-3 self-start mt-4"
-        >
-          <Text className="text-base text-surface">Import another</Text>
-        </Pressable>
-      </Link>
+      <View className="mt-4">
+        <Link href="/import" asChild>
+          <Button variant="primary">Import another</Button>
+        </Link>
+      </View>
     </Screen>
   );
 }
