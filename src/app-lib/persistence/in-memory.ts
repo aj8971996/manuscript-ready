@@ -51,6 +51,10 @@ export function createInMemoryAdapter(): PersistenceAdapter {
         title: input.title,
         category: input.category,
         irJson: input.irJson,
+        // Defensive copy: callers can mutate their input array after
+        // insert without affecting the stored row. Storage is the
+        // authority on persisted shape.
+        warnings: [...input.warnings],
         createdAt: input.createdAt ?? nextCreatedAt(),
       };
       rows.set(row.id, row);

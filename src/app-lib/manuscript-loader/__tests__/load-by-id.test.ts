@@ -11,6 +11,7 @@ const makeRow = (overrides: Partial<Parameters<PersistenceAdapter['insertManuscr
   title: 'Untitled',
   category: 'short-story' as const,
   irJson: JSON.stringify({ blocks: [], meta: {} }),
+  warnings: [] as ReadonlyArray<string>,
   ...overrides,
 });
 
@@ -34,6 +35,7 @@ describe('loadById', () => {
           category: 'short-story',
           irJson: JSON.stringify({ blocks: [], meta: {} }),
           createdAt: 1000,
+          warnings: [],
         },
       });
     });
@@ -52,7 +54,7 @@ describe('loadById', () => {
 
   describe('storage-failure', () => {
     it('maps PersistenceFailure (e.g. not-initialized) to storage-failure', async () => {
-      // Skip init() â€” adapter will throw PersistenceFailure(not-initialized).
+      // Skip init() — adapter will throw PersistenceFailure(not-initialized).
       const adapter = createInMemoryAdapter();
 
       const result = await loadById(adapter, 'mr_anything');

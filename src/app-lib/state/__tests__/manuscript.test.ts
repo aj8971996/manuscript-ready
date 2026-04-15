@@ -126,6 +126,7 @@ describe('manuscript store — manuscriptIndex + hydrate', () => {
         title: r.title,
         category: r.category,
         irJson: JSON.stringify({ schemaVersion: 1, metadata: {}, body: [] }),
+        warnings: [],
         createdAt: r.createdAt,
       });
     }

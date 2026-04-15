@@ -20,6 +20,12 @@
  * sourced from the parsed IR (single source of truth); the parameter
  * `category` feeds the parser as a hint and is only used as a fallback
  * if the IR somehow doesn't carry one.
+ *
+ * Warnings: parser warnings are persisted verbatim alongside the IR so
+ * the Review screen can re-validate at view time without losing
+ * parser-time signals (unsupported-block:<tag>, mammoth-warning, etc.)
+ * that aren't reconstructible from the IR alone. Storage stores raw
+ * keys; the validation layer owns the key→message mapping.
  */
 import {
   PersistenceFailure,
@@ -128,6 +134,7 @@ export async function importFromBytes(
     title,
     category: ir.metadata.category ?? category,
     irJson: JSON.stringify(ir),
+    warnings: parsed.warnings,
     createdAt: now(),
   };
 

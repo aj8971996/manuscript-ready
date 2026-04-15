@@ -13,6 +13,12 @@
  * Test 14 composes real `parseDocx` with real bytes from the engine's
  * `buildDocx` fixture-builder to catch any drift at the parser/orchestrator
  * seam that unit doubles can't see.
+ *
+ * Commit 14 addition: warnings are now persisted alongside the IR. The
+ * pre-existing tests already returned warnings:[] from the parse mocks
+ * (since ParseResult requires it); this commit adds an explicit
+ * round-trip assertion plus updates the id-collision setup to include
+ * the new required field.
  */
 import {
   createInMemoryAdapter,
@@ -117,6 +123,7 @@ describe('importFromBytes — golden paths', () => {
     expect(row!.category).toBe('short-story');
     expect(row!.createdAt).toBe(FIXED_CLOCK);
     expect(JSON.parse(row!.irJson)).toEqual(ir);
+    expect(row!.warnings).toEqual([]);
   });
 
   it('persists a parsed .txt and returns its id', async () => {
@@ -148,6 +155,32 @@ describe('importFromBytes — golden paths', () => {
 
     const row = await adapter.getManuscriptById(FIXED_ID);
     expect(row!.title).toBe('Txt Story');
+  });
+
+  it('persists parser warnings verbatim alongside the IR', async () => {
+    const adapter = await makeInitializedAdapter();
+    const warnings = [
+      'unsupported-block:ul',
+      'metadata-missing:title',
+      'mammoth-warning',
+    ];
+    const parseDocx = staticParseDocx({
+      ok: true,
+      manuscript: makeIr(),
+      warnings,
+    });
+
+    await importFromBytes(
+      new Uint8Array([0x50, 0x4b]),
+      'with-warnings.docx',
+      'short-story',
+      adapter,
+      defaultDeps({ parseDocx }),
+    );
+
+    const row = await adapter.getManuscriptById(FIXED_ID);
+    expect(row).not.toBeNull();
+    expect(row!.warnings).toEqual(warnings);
   });
 });
 
@@ -263,6 +296,7 @@ describe('importFromBytes — persistence failure modes', () => {
       title: 'Existing',
       category: 'short-story',
       irJson: JSON.stringify(makeIr()),
+      warnings: [],
       createdAt: 1,
     });
 
@@ -457,6 +491,7 @@ describe('importFromBytes — integration (real engine, real in-memory adapter)'
     expect(row!.schemaVersion).toBe(SCHEMA_VERSION);
     expect(row!.createdAt).toBe(FIXED_CLOCK);
     expect(row!.title.length).toBeGreaterThan(0);
+    expect(Array.isArray(row!.warnings)).toBe(true);
 
     const ir: ProseManuscript = JSON.parse(row!.irJson);
     expect(ir.schemaVersion).toBe(1);

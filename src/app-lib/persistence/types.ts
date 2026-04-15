@@ -16,6 +16,16 @@ export type SchemaVersion = typeof SCHEMA_VERSION;
  * A row as stored. `irJson` is the full serialized ProseManuscript; `title`
  * and `category` are denormalized for cheap Library list reads without
  * parsing every IR. `createdAt` is epoch ms, set at insert time.
+ *
+ * `warnings` is the raw engine warning-key array captured at parse time
+ * (e.g. ['unsupported-block:ul', 'metadata-missing:title']). Storage is
+ * deliberately raw — never derived UX state, never user-facing message
+ * strings. The validation layer (src/validation) is the sole authority
+ * for mapping these keys to severities and copy at view time. Storing
+ * raw keys means messages.ts can evolve without a migration.
+ *
+ * The list projection (ManuscriptListItem) deliberately does NOT include
+ * warnings — Library never loads them, just like it never loads bodies.
  */
 export type PersistedManuscriptRow = {
   readonly id: string;
@@ -24,9 +34,10 @@ export type PersistedManuscriptRow = {
   readonly category: Category;
   readonly createdAt: number;
   readonly irJson: string;
+  readonly warnings: ReadonlyArray<string>;
 };
 
-/** List projection — Library never loads bodies. */
+/** List projection — Library never loads bodies or warnings. */
 export type ManuscriptListItem = {
   readonly id: string;
   readonly title: string;
@@ -41,6 +52,7 @@ export type InsertManuscriptInput = {
   readonly title: string;
   readonly category: Category;
   readonly irJson: string;
+  readonly warnings: ReadonlyArray<string>;
   readonly createdAt?: number;
 };
 

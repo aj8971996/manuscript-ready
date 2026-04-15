@@ -8,6 +8,14 @@
  * On-device verification is the real test surface for this file. The
  * app-rn smoke test under __tests__/sqlite.test.ts only confirms the
  * module loads and factory is shaped correctly under jest-expo mocks.
+ *
+ * Schema-drift reconciliation: init() calls CREATE TABLE IF NOT EXISTS
+ * (handles fresh installs) and then runs PRAGMA table_info to detect
+ * missing columns added in later commits, applying ALTER TABLE patches
+ * in-place. This is distinct from `migrate(fromVersion)`, which is the
+ * IR-version migration hook reserved for ProseManuscript schema bumps.
+ * Column-drift reconciliation runs every init unconditionally; IR
+ * migration runs only when SCHEMA_VERSION changes.
  */
 import * as SQLite from 'expo-sqlite';
 import {
@@ -29,6 +37,7 @@ const CREATE_SQL = `
     category TEXT NOT NULL,
     created_at INTEGER NOT NULL,
     ir_json TEXT NOT NULL,
+    warnings_json TEXT NOT NULL DEFAULT '[]',
     insertion_seq INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_manuscripts_insertion_seq
@@ -42,7 +51,23 @@ type Row = {
   category: string;
   created_at: number;
   ir_json: string;
+  warnings_json: string;
   insertion_seq: number;
+};
+
+const parseWarnings = (raw: string): ReadonlyArray<string> => {
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    // Filter to strings only — defensive against any future shape drift
+    // in the column. Storage is the trust boundary; downstream consumers
+    // (ReviewModel mapper, validation re-run) assume string keys.
+    return parsed.filter((x): x is string => typeof x === 'string');
+  } catch {
+    // Corrupted JSON should never happen via our own writes, but a
+    // hand-edited dev DB shouldn't crash Library hydration.
+    return [];
+  }
 };
 
 const toDomain = (r: Row): PersistedManuscriptRow => ({
@@ -52,6 +77,7 @@ const toDomain = (r: Row): PersistedManuscriptRow => ({
   category: r.category as PersistedManuscriptRow['category'],
   createdAt: r.created_at,
   irJson: r.ir_json,
+  warnings: parseWarnings(r.warnings_json),
 });
 
 const wrapStorageFailure = async <T>(fn: () => Promise<T>): Promise<T> => {
@@ -84,11 +110,28 @@ export function createSqliteAdapter(dbName: string = DEFAULT_DB_NAME): Persisten
       await wrapStorageFailure(async () => {
         db = await SQLite.openDatabaseAsync(dbName);
         await db.execAsync(CREATE_SQL);
+        // Reconcile column drift on dev DBs created before warnings_json
+        // existed. Idempotent: if the column is present (fresh install
+        // via CREATE_SQL above, or any post-Commit-14 install), this is
+        // a no-op. Pre-Commit-14 rows backfill to '[]' via the column
+        // default — those manuscripts will show as Submission Ready in
+        // Review until re-imported, which is correct lossy-but-safe
+        // behavior (the warnings were never captured for those rows).
+        const cols = await db.getAllAsync<{ name: string }>(
+          'PRAGMA table_info(manuscripts)',
+        );
+        const hasWarnings = cols.some((c) => c.name === 'warnings_json');
+        if (!hasWarnings) {
+          await db.execAsync(
+            "ALTER TABLE manuscripts ADD COLUMN warnings_json TEXT NOT NULL DEFAULT '[]'",
+          );
+        }
       });
     },
 
     async migrate(_fromVersion: number) {
-      // v1: no-op. Hook preserved for future IR evolution.
+      // v1: no-op. Hook reserved for future IR (ProseManuscript) evolution,
+      // distinct from the column-drift reconciliation in init() above.
     },
 
     async insertManuscript(input: InsertManuscriptInput): Promise<string> {
@@ -108,9 +151,18 @@ export function createSqliteAdapter(dbName: string = DEFAULT_DB_NAME): Persisten
         const seq = seqRow?.next ?? 1;
         await database.runAsync(
           `INSERT INTO manuscripts
-             (id, schema_version, title, category, created_at, ir_json, insertion_seq)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [input.id, SCHEMA_VERSION, input.title, input.category, createdAt, input.irJson, seq],
+             (id, schema_version, title, category, created_at, ir_json, warnings_json, insertion_seq)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            input.id,
+            SCHEMA_VERSION,
+            input.title,
+            input.category,
+            createdAt,
+            input.irJson,
+            JSON.stringify(input.warnings),
+            seq,
+          ],
         );
         return input.id;
       });

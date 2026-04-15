@@ -11,6 +11,7 @@ const makeRow = (overrides: Partial<Parameters<PersistenceAdapter['insertManuscr
   title: 'Untitled',
   category: 'short-story' as const,
   irJson: JSON.stringify({ blocks: [], meta: {} }),
+  warnings: [] as ReadonlyArray<string>,
   ...overrides,
 });
 
@@ -48,6 +49,7 @@ describe('PersistenceAdapter contract — in-memory implementation', () => {
         category: 'short-story',
         irJson: JSON.stringify({ blocks: [], meta: {} }),
         createdAt: 1000,
+        warnings: [],
       });
     });
 
@@ -86,6 +88,43 @@ describe('PersistenceAdapter contract — in-memory implementation', () => {
     });
   });
 
+  describe('warnings field — raw key storage', () => {
+    it('round-trips a non-empty warnings array verbatim', async () => {
+      const adapter = createInMemoryAdapter();
+      await adapter.init();
+      const warnings = ['unsupported-block:ul', 'metadata-missing:title'];
+      await adapter.insertManuscript(makeRow({ id: 'mr_w1', warnings }));
+      const got = await adapter.getManuscriptById('mr_w1');
+      expect(got?.warnings).toEqual(warnings);
+    });
+
+    it('preserves warnings order and duplicates as inserted (storage is not the dedup layer)', async () => {
+      const adapter = createInMemoryAdapter();
+      await adapter.init();
+      // Validation dedupes; storage must not. Storing raw means the
+      // validation layer can change its dedup policy without a migration.
+      const warnings = [
+        'mammoth-warning',
+        'unsupported-block:ul',
+        'mammoth-warning',
+        'mammoth-warning',
+      ];
+      await adapter.insertManuscript(makeRow({ id: 'mr_w2', warnings }));
+      const got = await adapter.getManuscriptById('mr_w2');
+      expect(got?.warnings).toEqual(warnings);
+    });
+
+    it('defensively copies warnings — caller mutation does not affect stored row', async () => {
+      const adapter = createInMemoryAdapter();
+      await adapter.init();
+      const warnings: string[] = ['metadata-missing:title'];
+      await adapter.insertManuscript(makeRow({ id: 'mr_w3', warnings }));
+      warnings.push('mutated-after-insert');
+      const got = await adapter.getManuscriptById('mr_w3');
+      expect(got?.warnings).toEqual(['metadata-missing:title']);
+    });
+  });
+
   describe('listManuscripts', () => {
     it('returns [] on empty DB', async () => {
       const adapter = createInMemoryAdapter();
@@ -110,6 +149,17 @@ describe('PersistenceAdapter contract — in-memory implementation', () => {
       const [item] = await adapter.listManuscripts();
       expect(item).toBeDefined();
       expect(Object.keys(item!).sort()).toEqual(['category', 'createdAt', 'id', 'title']);
+    });
+
+    it('projection explicitly excludes warnings (Library never loads them)', async () => {
+      const adapter = createInMemoryAdapter();
+      await adapter.init();
+      await adapter.insertManuscript(
+        makeRow({ id: 'mr_wproj', warnings: ['unsupported-block:ul'] }),
+      );
+      const [item] = await adapter.listManuscripts();
+      expect(item).toBeDefined();
+      expect((item as Record<string, unknown>).warnings).toBeUndefined();
     });
   });
 
