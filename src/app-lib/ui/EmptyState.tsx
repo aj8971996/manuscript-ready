@@ -1,6 +1,7 @@
 /**
  * EmptyState — centered title + supporting copy primitive.
- * No icon yet (deferred to Design Commit 3 with Feather wiring).
+ * Used by SeveritySection's per-section empty wells; no icon by design
+ * (ADR §4 calm-tone empty states).
  *
  * App-layer purity: src/app-lib/ui/** is route-agnostic and cannot import
  * from app/**.
