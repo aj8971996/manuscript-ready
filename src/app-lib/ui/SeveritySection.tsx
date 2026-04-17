@@ -39,7 +39,9 @@ export function SeveritySection({
         trailing={<Text className="text-sm text-text-muted">({count})</Text>}
       />
       {count === 0 ? (
-        <EmptyState title={emptyCopy} />
+        <View className="py-3 items-center">
+          <Text className="text-sm text-text-muted">{emptyCopy}</Text>
+        </View>
       ) : (
         <View>
           {issues.map((issue) => (

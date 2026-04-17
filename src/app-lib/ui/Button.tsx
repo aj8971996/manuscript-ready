@@ -18,6 +18,7 @@ type ButtonProps = {
   variant: ButtonVariant;
   onPress?: () => void;
   disabled?: boolean;
+  fullWidth?: boolean;
   accessibilityLabel?: string;
   children: React.ReactNode;
 };
@@ -38,6 +39,7 @@ export function Button({
   variant,
   onPress,
   disabled = false,
+  fullWidth = false,
   accessibilityLabel,
   children,
 }: ButtonProps) {
@@ -51,8 +53,9 @@ export function Button({
       onPress={isDisabled ? undefined : onPress}
       disabled={isDisabled}
       className={containerClass[effectiveVariant]}
+      style={fullWidth ? { alignSelf: 'stretch' } : undefined}
     >
-      <Text className={textClass[effectiveVariant]}>{children}</Text>
+      <Text className={textClass[effectiveVariant]} style={fullWidth ? { textAlign: 'center' } : undefined}>{children}</Text>
     </Pressable>
   );
 }
