@@ -34,3 +34,48 @@ describe('Button smoke', () => {
     unmount(tree);
   });
 });
+
+describe('Button fullWidth', () => {
+  it('renders primary with fullWidth', () => {
+    const tree = renderInProvider(
+      <Button variant="primary" fullWidth>
+        Go
+      </Button>
+    );
+    expect(tree.toJSON()).toBeTruthy();
+    unmount(tree);
+  });
+
+  it('renders secondary with fullWidth', () => {
+    const tree = renderInProvider(
+      <Button variant="secondary" fullWidth>
+        Cancel
+      </Button>
+    );
+    expect(tree.toJSON()).toBeTruthy();
+    unmount(tree);
+  });
+
+  it('applies alignSelf stretch to the outer Pressable when fullWidth is true', () => {
+    const withFullWidth = renderInProvider(
+      <Button variant="primary" fullWidth>
+        Go
+      </Button>
+    );
+    const withoutFullWidth = renderInProvider(
+      <Button variant="primary">Go</Button>
+    );
+    const withPressable = withFullWidth.root.findAllByProps({
+      accessibilityRole: 'button',
+    })[0];
+    const withoutPressable = withoutFullWidth.root.findAllByProps({
+      accessibilityRole: 'button',
+    })[0];
+    expect(withPressable).toBeDefined();
+    expect(withoutPressable).toBeDefined();
+    expect(withPressable!.props.style).toEqual({ alignSelf: 'stretch' });
+    expect(withoutPressable!.props.style).toBeUndefined();
+    unmount(withFullWidth);
+    unmount(withoutFullWidth);
+  });
+});
