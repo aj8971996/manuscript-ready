@@ -20,6 +20,7 @@
 import * as SQLite from 'expo-sqlite';
 import {
   type InsertManuscriptInput,
+  type UpdateManuscriptInput,
   type ManuscriptListItem,
   type PersistedManuscriptRow,
   type PersistenceAdapter,
@@ -165,6 +166,59 @@ export function createSqliteAdapter(dbName: string = DEFAULT_DB_NAME): Persisten
           ],
         );
         return input.id;
+      });
+    },
+
+    async updateManuscript(
+      id: string,
+      input: UpdateManuscriptInput,
+    ): Promise<PersistedManuscriptRow> {
+      const database = requireDb();
+      return wrapStorageFailure(async () => {
+        // Existence check first so we can map to update-missing-id
+        // rather than silently no-op on a stale id. UPDATE with no
+        // WHERE match returns changes=0 but doesn't throw, so we
+        // cannot rely on sqlite to surface the condition for us.
+        const existing = await database.getFirstAsync<{ id: string }>(
+          'SELECT id FROM manuscripts WHERE id = ?',
+          [id],
+        );
+        if (!existing) {
+          throw new PersistenceFailure({ kind: 'update-missing-id', id });
+        }
+        // created_at, insertion_seq, and schema_version are deliberately
+        // excluded from the SET list — they are immutable under update.
+        await database.runAsync(
+          `UPDATE manuscripts
+             SET title = ?, category = ?, ir_json = ?, warnings_json = ?
+           WHERE id = ?`,
+          [
+            input.title,
+            input.category,
+            input.irJson,
+            JSON.stringify(input.warnings),
+            id,
+          ],
+        );
+        // Read back via SELECT * so toDomain is the single source of
+        // truth on the returned row shape (warnings_json parsing,
+        // category coercion, schemaVersion passthrough).
+        const updated = await database.getFirstAsync<Row>(
+          'SELECT * FROM manuscripts WHERE id = ?',
+          [id],
+        );
+        if (!updated) {
+          // Defensive: existence was confirmed above the UPDATE. A null
+          // here would mean a concurrent delete between SELECT and
+          // read-back, which expo-sqlite's single-connection model
+          // makes unreachable. Surface as storage-failure rather than
+          // a false update-missing-id.
+          throw new PersistenceFailure({
+            kind: 'storage-failure',
+            cause: new Error(`row ${id} vanished between update and read-back`),
+          });
+        }
+        return toDomain(updated);
       });
     },
 

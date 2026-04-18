@@ -206,6 +206,7 @@ describe('manuscript store — manuscriptIndex + hydrate', () => {
       async init() {},
       async migrate() {},
       async insertManuscript() { return ''; },
+      async updateManuscript() { throw new Error('not used'); },
       async getManuscriptById() { return null; },
       async listManuscripts() { throw new Error('disk corrupt'); },
     };

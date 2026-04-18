@@ -69,6 +69,9 @@ describe('loadById', () => {
         async insertManuscript() {
           throw new Error('not used');
         },
+        async updateManuscript() {
+          throw new Error('not used');
+        },
         async getManuscriptById() {
           throw new Error('boom');
         },

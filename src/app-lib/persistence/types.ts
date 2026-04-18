@@ -56,10 +56,44 @@ export type InsertManuscriptInput = {
   readonly createdAt?: number;
 };
 
-/** Typed failure union. Adapters reject with these, never throw raw. */
+/**
+ * Update input — narrower than Insert. `id` is positional on the adapter
+ * method; `schemaVersion` and `createdAt` are immutable under update
+ * (schema evolution goes through `migrate()`, and the creation timestamp
+ * plus insertion order are authoritative and must not shift when a row
+ * is edited).
+ *
+ * `warnings` IS updatable — metadata edits reconcile the persisted
+ * warning-key set against the new IR (e.g. adding a title clears
+ * `metadata-missing:title`, changing the category re-evaluates
+ * `category-wordcount-mismatch`). The reconciliation policy lives in
+ * app-lib (the save orchestrator), not in the adapter. The adapter's
+ * job is to write whatever warning array the caller supplies — same
+ * "storage is not the dedup layer, storage stores raw keys, validation
+ * owns meaning" discipline as on insert.
+ */
+export type UpdateManuscriptInput = {
+  readonly title: string;
+  readonly category: Category;
+  readonly irJson: string;
+  readonly warnings: ReadonlyArray<string>;
+};
+
+/**
+ * Typed failure union. Adapters reject with these, never throw raw.
+ *
+ * `update-missing-id` is distinct from `storage-failure`: the former is
+ * an expected structured condition (row gone, e.g. deleted between load
+ * and save), the latter is an unexpected error from the storage layer.
+ * Save-path callers branch on the two differently — missing-id bounces
+ * back to Library with a "manuscript no longer exists" message;
+ * storage-failure offers retry. Parallel to `id-collision` on the
+ * insert side.
+ */
 export type PersistenceError =
   | { readonly kind: 'not-initialized' }
   | { readonly kind: 'id-collision'; readonly id: string }
+  | { readonly kind: 'update-missing-id'; readonly id: string }
   | { readonly kind: 'schema-mismatch'; readonly found: number; readonly expected: number }
   | { readonly kind: 'storage-failure'; readonly cause: unknown };
 
@@ -74,6 +108,7 @@ export interface PersistenceAdapter {
   init(): Promise<void>;
   migrate(fromVersion: number): Promise<void>;
   insertManuscript(input: InsertManuscriptInput): Promise<string>;
+  updateManuscript(id: string, input: UpdateManuscriptInput): Promise<PersistedManuscriptRow>;
   getManuscriptById(id: string): Promise<PersistedManuscriptRow | null>;
   listManuscripts(): Promise<ReadonlyArray<ManuscriptListItem>>;
 }

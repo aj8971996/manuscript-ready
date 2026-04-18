@@ -163,6 +163,101 @@ describe('PersistenceAdapter contract — in-memory implementation', () => {
     });
   });
 
+  describe('update round-trip', () => {
+    it('returns the updated row with new title, category, irJson, and warnings', async () => {
+      const adapter = createInMemoryAdapter();
+      await adapter.init();
+      await adapter.insertManuscript(
+        makeRow({
+          id: 'mr_up1',
+          title: 'Before',
+          category: 'short-story',
+          warnings: ['metadata-missing:title'],
+        }),
+      );
+      const newIr = JSON.stringify({ blocks: [], meta: { edited: true } });
+      const updated = await adapter.updateManuscript('mr_up1', {
+        title: 'After',
+        category: 'novelette',
+        irJson: newIr,
+        warnings: [],
+      });
+      expect(updated.title).toBe('After');
+      expect(updated.category).toBe('novelette');
+      expect(updated.irJson).toBe(newIr);
+      expect(updated.warnings).toEqual([]);
+      // And a follow-up read confirms the write landed (not just the
+      // returned projection).
+      const got = await adapter.getManuscriptById('mr_up1');
+      expect(got?.title).toBe('After');
+      expect(got?.category).toBe('novelette');
+      expect(got?.irJson).toBe(newIr);
+      expect(got?.warnings).toEqual([]);
+    });
+
+    it('preserves createdAt and schemaVersion across update (both are immutable)', async () => {
+      const adapter = createInMemoryAdapter();
+      await adapter.init();
+      await adapter.insertManuscript(makeRow({ id: 'mr_up2', createdAt: 12345 }));
+      const updated = await adapter.updateManuscript('mr_up2', {
+        title: 'New',
+        category: 'short-story',
+        irJson: '{}',
+        warnings: [],
+      });
+      expect(updated.createdAt).toBe(12345);
+      expect(updated.schemaVersion).toBe(SCHEMA_VERSION);
+    });
+
+    it('preserves list insertion order across update (update does not move the row)', async () => {
+      const adapter = createInMemoryAdapter();
+      await adapter.init();
+      await adapter.insertManuscript(makeRow({ id: 'mr_up3a', title: 'A' }));
+      await adapter.insertManuscript(makeRow({ id: 'mr_up3b', title: 'B' }));
+      await adapter.insertManuscript(makeRow({ id: 'mr_up3c', title: 'C' }));
+      await adapter.updateManuscript('mr_up3a', {
+        title: 'A-edited',
+        category: 'short-story',
+        irJson: '{}',
+        warnings: [],
+      });
+      const list = await adapter.listManuscripts();
+      expect(list.map((r) => r.id)).toEqual(['mr_up3a', 'mr_up3b', 'mr_up3c']);
+      expect(list[0]!.title).toBe('A-edited');
+    });
+
+    it('defensively copies warnings on update — caller mutation does not affect stored row', async () => {
+      const adapter = createInMemoryAdapter();
+      await adapter.init();
+      await adapter.insertManuscript(makeRow({ id: 'mr_up4' }));
+      const warnings: string[] = ['metadata-missing:title'];
+      await adapter.updateManuscript('mr_up4', {
+        title: 'T',
+        category: 'short-story',
+        irJson: '{}',
+        warnings,
+      });
+      warnings.push('mutated-after-update');
+      const got = await adapter.getManuscriptById('mr_up4');
+      expect(got?.warnings).toEqual(['metadata-missing:title']);
+    });
+
+    it('projection still excludes warnings after update', async () => {
+      const adapter = createInMemoryAdapter();
+      await adapter.init();
+      await adapter.insertManuscript(makeRow({ id: 'mr_up5', warnings: [] }));
+      await adapter.updateManuscript('mr_up5', {
+        title: 'T',
+        category: 'short-story',
+        irJson: '{}',
+        warnings: ['unsupported-block:ul'],
+      });
+      const [item] = await adapter.listManuscripts();
+      expect(item).toBeDefined();
+      expect((item as Record<string, unknown>).warnings).toBeUndefined();
+    });
+  });
+
   describe('failure modes', () => {
     it('insertManuscript before init rejects with not-initialized', async () => {
       const adapter = createInMemoryAdapter();
@@ -188,6 +283,37 @@ describe('PersistenceAdapter contract — in-memory implementation', () => {
       await adapter.insertManuscript(makeRow({ id: 'mr_dup' }));
       await expect(adapter.insertManuscript(makeRow({ id: 'mr_dup' }))).rejects.toMatchObject({
         detail: { kind: 'id-collision', id: 'mr_dup' },
+      });
+    });
+
+    it('updateManuscript on unknown id rejects with update-missing-id', async () => {
+      const adapter = createInMemoryAdapter();
+      await adapter.init();
+      await expect(
+        adapter.updateManuscript('ghost', {
+          title: 'T',
+          category: 'short-story',
+          irJson: '{}',
+          warnings: [],
+        }),
+      ).rejects.toMatchObject({
+        name: 'PersistenceFailure',
+        detail: { kind: 'update-missing-id', id: 'ghost' },
+      });
+    });
+
+    it('updateManuscript before init rejects with not-initialized', async () => {
+      const adapter = createInMemoryAdapter();
+      await expect(
+        adapter.updateManuscript('x', {
+          title: 'T',
+          category: 'short-story',
+          irJson: '{}',
+          warnings: [],
+        }),
+      ).rejects.toMatchObject({
+        name: 'PersistenceFailure',
+        detail: { kind: 'not-initialized' },
       });
     });
   });

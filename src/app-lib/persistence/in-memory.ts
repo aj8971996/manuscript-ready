@@ -5,6 +5,7 @@
  */
 import {
   type InsertManuscriptInput,
+  type UpdateManuscriptInput,
   type ManuscriptListItem,
   type PersistedManuscriptRow,
   type PersistenceAdapter,
@@ -60,6 +61,33 @@ export function createInMemoryAdapter(): PersistenceAdapter {
       rows.set(row.id, row);
       insertionOrder.push(row.id);
       return row.id;
+    },
+
+    async updateManuscript(
+      id: string,
+      input: UpdateManuscriptInput,
+    ): Promise<PersistedManuscriptRow> {
+      requireInit();
+      const existing = rows.get(id);
+      if (!existing) {
+        throw new PersistenceFailure({ kind: 'update-missing-id', id });
+      }
+      const updated: PersistedManuscriptRow = {
+        // Immutable-under-update: id, schemaVersion, createdAt carry
+        // forward from the existing row. insertionOrder is deliberately
+        // not touched — Map.set on an existing key preserves iteration
+        // order, and we never push to insertionOrder on update.
+        id: existing.id,
+        schemaVersion: existing.schemaVersion,
+        createdAt: existing.createdAt,
+        title: input.title,
+        category: input.category,
+        irJson: input.irJson,
+        // Defensive copy — same rule as insert.
+        warnings: [...input.warnings],
+      };
+      rows.set(id, updated);
+      return updated;
     },
 
     async getManuscriptById(id: string): Promise<PersistedManuscriptRow | null> {
