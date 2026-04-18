@@ -68,7 +68,7 @@ export default function ManuscriptDetailScreen() {
     return (
       <Screen hasHeader>
         <Stack.Screen options={{ title: 'Manuscript' }} />
-        <Text className="text-base text-text-muted">Loading\u2026</Text>
+        <Text className="text-base text-text-muted">Loading{'\u2026'}</Text>
       </Screen>
     );
   }

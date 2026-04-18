@@ -78,7 +78,7 @@ export default function LibraryScreen() {
       <View className="pt-4 mt-2 flex-row">
         <View className="flex-1 mr-2">
           <Link href="/import" asChild>
-            <Button variant="secondary" fullWidth accessibilityLabel="Import a manuscript">
+            <Button variant="primary" fullWidth accessibilityLabel="Import a manuscript">
               Import
             </Button>
           </Link>

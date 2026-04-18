@@ -35,6 +35,13 @@
  * persist as undefined when cleared; all other edited fields are
  * required strings and persist empty. contact.name is synced to
  * metadata.legalName on save (single edit path per D8).
+ *
+ * Banner scale (Commit 29, F6): save-error banner uses the page-level
+ * canonical shape (px-3 py-2, icon 14 in wrapper View, text-sm, ml-2)
+ * matching Import's pickup-failure banner. The two inline-field banners
+ * (legalName-missing and renderFieldError) stay on the inline-field
+ * scale (px-2 py-1, icon 12 inline, text-xs, ml-1) — they're correctly
+ * scaled for their under-input role.
  */
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -698,14 +705,15 @@ export default function MetadataEditorScreen() {
       {/* Save CTA + error banner */}
       <View className="mt-4">
         {saveError !== null ? (
-          <View className="flex-row items-start mb-2 bg-status-attention-bg rounded-sm px-2 py-1">
-            <Feather
-              name="alert-circle"
-              size={14}
-              color={tokens['status-attention-text']}
-              style={{ marginTop: 2 }}
-            />
-            <Text className="text-xs text-status-attention-text ml-1 flex-1">
+          <View className="flex-row items-start mb-2 bg-status-attention-bg rounded-sm px-3 py-2">
+            <View style={{ marginTop: 2 }}>
+              <Feather
+                name="alert-circle"
+                size={14}
+                color={tokens['status-attention-text']}
+              />
+            </View>
+            <Text className="text-sm text-status-attention-text ml-2 flex-1">
               {saveError}
             </Text>
           </View>

@@ -61,7 +61,7 @@ export default function ReviewExportScreen() {
     return (
       <Screen hasHeader>
         <Stack.Screen options={{ title: 'Review & export' }} />
-        <Text className="text-base text-text-muted">Loading\u2026</Text>
+        <Text className="text-base text-text-muted">Loading{'\u2026'}</Text>
       </Screen>
     );
   }
