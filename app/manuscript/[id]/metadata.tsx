@@ -54,7 +54,7 @@ import { Button } from '../../../src/app-lib/ui/Button';
 import { darkTokens, lightTokens } from '../../../src/app-lib/theme/tokens';
 import { useResolvedTheme } from '../../../src/app-lib/theme/use-theme';
 
-/* ── Types ─────────────────────────────────────────────────────── */
+/* ── Types ─────────────────────────────────────────────────────────── */
 
 type ScreenState =
   | { kind: 'loading' }
@@ -84,7 +84,7 @@ type EditorSnapshot = {
   email: string;
 };
 
-/* ── Helpers ───────────────────────────────────────────────────── */
+/* ── Helpers ───────────────────────────────────────────────────────── */
 
 function parseIR(irJson: string): ProseManuscript | null {
   try {
@@ -131,7 +131,7 @@ function getFieldError(key: ContactFieldKey, value: string): string | null {
   }
 }
 
-/* ── Screen ────────────────────────────────────────────────────── */
+/* ── Screen ────────────────────────────────────────────────────────── */
 
 export default function MetadataEditorScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -227,7 +227,7 @@ export default function MetadataEditorScreen() {
     };
   }, [id]);
 
-  /* ── Validation helpers ──────────────────────────────────────── */
+  /* ── Validation helpers ─────────────────────────────────────────── */
 
   const validateField = (key: ContactFieldKey, value: string) => {
     const err = getFieldError(key, value);
@@ -281,7 +281,7 @@ export default function MetadataEditorScreen() {
     return Object.keys(errors).length === 0;
   };
 
-  /* ── Dirty tracking ──────────────────────────────────────────── */
+  /* ── Dirty tracking ─────────────────────────────────────────────── */
 
   const isDirty =
     title !== snapshot.title ||
@@ -299,7 +299,7 @@ export default function MetadataEditorScreen() {
   const canSave =
     isDirty && !saving && !hasFieldErrors && state.kind === 'loaded';
 
-  /* ── Save handler ────────────────────────────────────────────── */
+  /* ── Save handler ──────────────────────────────────────────────── */
 
   const handleSave = async () => {
     if (state.kind !== 'loaded' || !canSave) return;
@@ -377,7 +377,7 @@ export default function MetadataEditorScreen() {
     }
   };
 
-  /* ── Loading / error states ──────────────────────────────────── */
+  /* ── Loading / error states ────────────────────────────────────── */
 
   if (state.kind === 'loading') {
     return (
@@ -400,7 +400,7 @@ export default function MetadataEditorScreen() {
     );
   }
 
-  /* ── Loaded ──────────────────────────────────────────────────── */
+  /* ── Loaded ────────────────────────────────────────────────────── */
 
   const { ir } = state;
   const metadata = ir.metadata;
@@ -437,14 +437,14 @@ export default function MetadataEditorScreen() {
           onPress={() => setTab('identity')}
           className={
             tab === 'identity'
-              ? 'flex-1 bg-surface rounded-sm py-2 items-center border border-border'
+              ? 'flex-1 bg-accent-subtle rounded-sm py-2 items-center'
               : 'flex-1 py-2 items-center'
           }
         >
           <Text
             className={
               tab === 'identity'
-                ? 'text-sm text-text-primary'
+                ? 'text-sm text-text-primary font-semibold'
                 : 'text-sm text-text-muted'
             }
           >
@@ -457,14 +457,14 @@ export default function MetadataEditorScreen() {
           onPress={() => setTab('contact')}
           className={
             tab === 'contact'
-              ? 'flex-1 bg-surface rounded-sm py-2 items-center border border-border'
+              ? 'flex-1 bg-accent-subtle rounded-sm py-2 items-center'
               : 'flex-1 py-2 items-center'
           }
         >
           <Text
             className={
               tab === 'contact'
-                ? 'text-sm text-text-primary'
+                ? 'text-sm text-text-primary font-semibold'
                 : 'text-sm text-text-muted'
             }
           >
@@ -473,13 +473,13 @@ export default function MetadataEditorScreen() {
         </Pressable>
       </View>
 
-      {/* ── Identity tab ──────────────────────────────────────── */}
+      {/* ── Identity tab ──────────────────────────────────────────── */}
       {tab === 'identity' ? (
         <Card>
           <View className="mb-4">
             <Text className="text-sm text-text-secondary mb-1">Title</Text>
             <TextInput
-              className="bg-bg border border-border-strong rounded-sm px-3 py-2 text-base text-text-primary"
+              className="bg-bg border border-border rounded-sm px-3 py-2 text-base text-text-primary"
               value={title}
               onChangeText={setTitle}
               placeholder="Untitled"
@@ -495,7 +495,7 @@ export default function MetadataEditorScreen() {
               Byline (pen name)
             </Text>
             <TextInput
-              className="bg-bg border border-border-strong rounded-sm px-3 py-2 text-base text-text-primary"
+              className="bg-bg border border-border rounded-sm px-3 py-2 text-base text-text-primary"
               value={byline}
               onChangeText={setByline}
               placeholder="Author name for publication"
@@ -555,7 +555,7 @@ export default function MetadataEditorScreen() {
         </Card>
       ) : null}
 
-      {/* ── Contact tab ───────────────────────────────────────── */}
+      {/* ── Contact tab ──────────────────────────────────────────── */}
       {tab === 'contact' ? (
         <Card>
           {structured ? (
@@ -684,8 +684,9 @@ export default function MetadataEditorScreen() {
               </View>
             </>
           ) : (
-            <View className="py-4 items-center">
-              <Text className="text-sm text-text-muted text-center">
+            <View className="py-6 items-center">
+              <Feather name="file-text" size={28} color={tokens['text-muted']} />
+              <Text className="text-sm text-text-muted text-center mt-3">
                 Contact information was imported as freetext and cannot be
                 edited in structured mode.
               </Text>
