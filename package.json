@@ -1,7 +1,7 @@
 {
   "name": "manuscript-ready",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
@@ -74,5 +74,6 @@
     "ts-node": "^10.9.2",
     "typescript": "~5.9.2"
   },
-  "private": true
+  "private": true,
+  "description": "Mobile-first utility that takes a fiction writer's draft (.docx, .txt, or pasted text) and exports it in industry-standard manuscript formats."
 }
