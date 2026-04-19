@@ -6,6 +6,11 @@
  * ADR §6 colors, emitted as space-separated RGB triplets for NativeWind v4.
  * The canonical TS source is src/app-lib/theme/tokens.ts (hex). Values here
  * must match §6 exactly — regenerate from tokens.ts if edits drift.
+ *
+ * Dark mode is OS-driven: NativeWind's darkMode: 'media' triggers `dark:`
+ * variants from useColorScheme(), and the @media block below swaps the
+ * CSS variable values in lockstep. No manual `dark` className needed —
+ * removing it avoided the nativewind/css-interop nav-context race.
  */
 
 /* Light (default) */
@@ -29,24 +34,25 @@
   --color-status-attention-bg: 250 238 218;
 }
 
-/* Dark — applied when an ancestor has the `dark` class */
-.dark:root,
-.dark {
-  --color-bg: 20 20 19;
-  --color-surface: 30 29 27;
-  --color-surface-muted: 38 37 31;
-  --color-border: 47 46 40;
-  --color-border-strong: 69 67 57;
-  --color-text-primary: 240 239 234;
-  --color-text-secondary: 168 165 157;
-  --color-text-muted: 122 119 111;
-  --color-accent: 122 151 240;
-  --color-accent-subtle: 31 44 82;
-  --color-severity-blocker: 248 113 113;
-  --color-severity-attention: 251 176 76;
-  --color-severity-info: 168 165 157;
-  --color-status-ready-text: 74 222 128;
-  --color-status-ready-bg: 20 49 31;
-  --color-status-attention-text: 251 176 76;
-  --color-status-attention-bg: 59 42 16;
+/* Dark — applied when the OS color scheme is dark */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: 20 20 19;
+    --color-surface: 30 29 27;
+    --color-surface-muted: 38 37 31;
+    --color-border: 47 46 40;
+    --color-border-strong: 69 67 57;
+    --color-text-primary: 240 239 234;
+    --color-text-secondary: 168 165 157;
+    --color-text-muted: 122 119 111;
+    --color-accent: 122 151 240;
+    --color-accent-subtle: 31 44 82;
+    --color-severity-blocker: 248 113 113;
+    --color-severity-attention: 251 176 76;
+    --color-severity-info: 168 165 157;
+    --color-status-ready-text: 74 222 128;
+    --color-status-ready-bg: 20 49 31;
+    --color-status-attention-text: 251 176 76;
+    --color-status-attention-bg: 59 42 16;
+  }
 }

@@ -12,9 +12,10 @@
  */
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
+import { Feather } from '@expo/vector-icons';
 
 import { getSqliteAdapter } from '../src/app-lib/persistence/native-singleton';
 import {
@@ -22,6 +23,11 @@ import {
   type ImportFailure,
 } from '../src/app-lib/import/import-flow';
 import type { Category } from '../src/app-lib/engine-dispatch';
+import { Screen } from '../src/app-lib/ui/Screen';
+import { Button } from '../src/app-lib/ui/Button';
+import { Card } from '../src/app-lib/ui/Card';
+import { darkTokens, lightTokens } from '../src/app-lib/theme/tokens';
+import { useResolvedTheme } from '../src/app-lib/theme/use-theme';
 
 type Status =
   | { kind: 'idle' }
@@ -59,6 +65,8 @@ export default function ImportScreen() {
   const router = useRouter();
   const [category, setCategory] = useState<Category | null>(null);
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
+  const theme = useResolvedTheme();
+  const tokens = theme === 'dark' ? darkTokens : lightTokens;
 
   const canPick = category !== null && status.kind !== 'working';
 
@@ -104,8 +112,9 @@ export default function ImportScreen() {
   };
 
   return (
-    <View className="flex-1 bg-bg px-5 pt-7">
-      <Text className="text-2xl text-text-primary mb-3">Import</Text>
+    <Screen scrollable hasHeader>
+      <Stack.Screen options={{ title: 'Import' }} />
+
       <Text className="text-base text-text-secondary mb-6">
         Pick a .docx or .txt file from your device. We never upload — parsing happens locally.
       </Text>
@@ -134,27 +143,47 @@ export default function ImportScreen() {
         })}
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ disabled: !canPick }}
-        onPress={onChooseFile}
-        disabled={!canPick}
-        className={
-          canPick
-            ? 'bg-accent rounded-md px-4 py-3 self-start'
-            : 'bg-accent/40 rounded-md px-4 py-3 self-start'
-        }
-      >
-        <Text className="text-base text-surface">
-          {status.kind === 'working' ? 'Working…' : 'Choose file'}
-        </Text>
-      </Pressable>
+      <Card>
+        <View className="py-4">
+          <View className="items-center">
+            <Feather
+              name="file-plus"
+              size={32}
+              color={tokens['text-secondary']}
+            />
+            {category === null ? (
+              <Text className="text-sm text-text-muted mt-3 text-center">
+                Pick a category above to continue
+              </Text>
+            ) : null}
+          </View>
+          <View className="mt-4">
+            <Button
+              variant="primary"
+              onPress={onChooseFile}
+              disabled={!canPick}
+              fullWidth
+            >
+              {status.kind === 'working' ? 'Working…' : 'Choose file'}
+            </Button>
+          </View>
+        </View>
+      </Card>
 
       {status.kind === 'failed' ? (
-        <Text className="text-sm text-severity-blocker mt-4">
-          {failureMessage(status.failure)}
-        </Text>
+        <View className="flex-row items-start mt-4 bg-status-attention-bg rounded-sm px-3 py-2">
+          <View style={{ marginTop: 2 }}>
+            <Feather
+              name="alert-circle"
+              size={14}
+              color={tokens['status-attention-text']}
+            />
+          </View>
+          <Text className="text-sm text-status-attention-text ml-2 flex-1">
+            {failureMessage(status.failure)}
+          </Text>
+        </View>
       ) : null}
-    </View>
+    </Screen>
   );
 }
